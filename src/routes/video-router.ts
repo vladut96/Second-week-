@@ -8,6 +8,8 @@ export const videoRouter = Router({});
 
 let nextId = 1;
 
+
+
 videoRouter.get('/', (req: Request, res: Response) => {
     res.status(200).json({
         description: "Success",
