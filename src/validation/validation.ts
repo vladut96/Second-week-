@@ -2,7 +2,7 @@ import {Request} from "express";
 
 export const allowedResolutions = ["P144", "P240", "P360", "P480", "P720", "P1080", "P1440", "P2160"];
 
-export const validateVideoInput = (req: Request) => {
+/*export const validateVideoInput = (req: Request) => {
     const { title, author, availableResolutions, canBeDownloaded, minAgeRestriction, publicationDate } = req.body;
     let errors: { message: string; field: string }[] = [];
 
@@ -41,10 +41,10 @@ export const validateVideoInput = (req: Request) => {
     }
 
     return errors;
-};
+};*/
 
 
-/*export const validateVideoInput = (req: Request) => {
+export const validateVideoInput = (req: Request) => {
     const { title, author, availableResolutions } = req.body;
     let errors: { message: string; field: string }[] = [];
 
@@ -63,7 +63,7 @@ export const validateVideoInput = (req: Request) => {
             !availableResolutions.every(res => allowedResolutions.includes(res))) {
             errors.push({ message: "Invalid resolution value(s)", field: "availableResolutions" });
         }
-    }*/
+    }
 
     return errors;
 };
