@@ -9,7 +9,7 @@ export const videoRouter = Router({});
 let nextId = 1;
 
 videoRouter.get('/', (req: Request, res: Response) => {
-    res.status(200).json({ data: videos});
+    res.status(200).json(videos);
 });
 videoRouter.get('/:id', (req: Request, res: Response) => {
     const videoId = Number(req.params.id); // Convert id to number
