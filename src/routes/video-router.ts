@@ -33,16 +33,19 @@ videoRouter.post('/', (req: Request, res: Response) => {
     }
 
     const { title, author, availableResolutions } = req.body;
+    const createdAt = new Date();
+    const publicationDate = new Date(createdAt);
+    publicationDate.setDate(publicationDate.getDate() + 1);
 
     const newVideo: Video = {
         id: nextId++,
-        title: title,
-        author: author,
-        canBeDownloaded: false, // Default value
+        title,
+        author,
+        canBeDownloaded: false,
         minAgeRestriction: null,
-        createdAt: new Date().toISOString(),
-        publicationDate: new Date().toISOString(),
-        availableResolutions: availableResolutions || [] // Default empty array if null
+        createdAt: createdAt.toISOString(),
+        publicationDate: publicationDate.toISOString(),
+        availableResolutions: availableResolutions || []
     };
 
     videos = [...videos, newVideo];
@@ -53,13 +56,14 @@ videoRouter.put('/:id', (req: Request, res: Response) => {
     const videoId = Number(req.params.id);
     const video = videos.find(v => v.id === videoId);
 
+    if (!video) {
+        return res.sendStatus(404);
+    }
     const errors = validateVideoInput(req);
     if (errors.length > 0) {
         return res.status(400).json({ errorsMessages: errors });
     }
-    if (!video) {
-        return res.sendStatus(404);
-    }
+
     const { title, author, availableResolutions, canBeDownloaded, minAgeRestriction, publicationDate } = req.body;
 
     if (title !== undefined) video.title = title;
@@ -69,7 +73,7 @@ videoRouter.put('/:id', (req: Request, res: Response) => {
     if (minAgeRestriction !== undefined) video.minAgeRestriction = minAgeRestriction;
     if (publicationDate !== undefined) video.publicationDate = publicationDate;
 
-    return res.status(204);
+    return res.sendStatus(204);
 });
 videoRouter.delete('/:id', (req: Request, res: Response) => {
     const videoId = Number(req.params.id); // Convert id to number
