@@ -10,4 +10,4 @@ export interface Video {
     publicationDate?: string;
     availableResolutions?: string[];
 };
-export interface ICreateVideoResponseSuccess {description: string, data: Video}
+//export interface ICreateVideoResponseSuccess {description: string, data: Video}

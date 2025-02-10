@@ -1,3 +1,4 @@
 import {Video} from "../types/types";
 
-export let videos : Video[] = [];
+let videos : Video[] = [];
+export default videos;
