@@ -15,10 +15,10 @@ videoRouter.get('/:id', (req: Request, res: Response) => {
     const videoId = Number(req.params.id); // Convert id to number
     const foundVideo = videos.find(v => v.id === videoId);
     if (!foundVideo) {
-        return res.status(404).json({ error: "Video not found" });
+        return res.sendStatus(404);
     }
 
-    res.sendStatus(200).json(foundVideo);
+    res.status(200).json(foundVideo);
 
 
 
@@ -78,7 +78,7 @@ videoRouter.delete('/:id', (req: Request, res: Response) => {
         return res.sendStatus(404);
     }
     videos.splice(videoIndex, 1);
-    res.status(204).json();
+    res.sendStatus(204);
 });
 
 
