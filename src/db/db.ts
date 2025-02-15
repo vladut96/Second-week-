@@ -1,4 +1,6 @@
-import {Video} from "../types/types";
+import { Blogs, PostViewModel} from "../types/types";
 
-let videos : Video[] = [];
-export default videos;
+export const blogs : Blogs[] = [];
+export const posts : PostViewModel[] = [];
+
+

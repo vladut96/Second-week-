@@ -1,8 +1,8 @@
 import express from 'express'
 import cors from 'cors'
 import {SETTINGS} from "./settings";
-import {videoRouter} from "./routes/video-router";
-import {testingRouter} from "./routes/testing-router";
+import postsRouter from "./routes/posts-router";
+import blogsRouter from "./routes/blogs-router";
 
 export const app = express() // создать приложение
 app.use(express.json()) // создание свойств-объектов body и query во всех реквестах
@@ -11,6 +11,7 @@ app.use(cors()) // разрешить любым фронтам делать з�
 app.get('/', (req, res) => {
     res.status(200).json({version: '1.0'})
 })
-app.use(SETTINGS.PATH.VIDEOS, videoRouter)
-app.use(SETTINGS.PATH.TESTING, testingRouter);
+
+app.use('/posts', postsRouter);
+app.use('/blogs', blogsRouter);
 
