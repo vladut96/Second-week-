@@ -27,18 +27,24 @@ export const validatePostInput = [
 ];
 export const validateBlogInput = [
     check("name")
+        .exists().withMessage('Name is required')
+        .bail()
         .trim()
         .notEmpty().withMessage("Name is required")
         .isString()
         .isLength({ max: 15 }).withMessage("Name must be maximum 15 characters long"),
 
     check("description")
+        .exists().withMessage('Description is required')
+        .bail()
         .trim()
         .notEmpty().withMessage("Description is required")
         .isString()
         .isLength({ max: 500 }).withMessage("Description must be maximum 500 characters long"),
 
     check("websiteUrl")
+        .exists().withMessage('Website URL is required')
+        .bail()
         .trim()
         .notEmpty().withMessage("Website URL is required")
         .isString()

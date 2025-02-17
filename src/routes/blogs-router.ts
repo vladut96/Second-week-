@@ -5,7 +5,7 @@ import {db} from "../db/db";
 import {blogsRepository} from "../Repository/blogsRepository";
 import {basicAuthMiddleware} from "../validation/basicAuthMiddleware";
 import {validateBlogInput} from "../validation/express-validator";
-import {ValidationError, validationResult} from "express-validator";
+import {FieldValidationError, validationResult} from "express-validator";
 export const blogsRouter = Router();
 
 
@@ -25,7 +25,7 @@ blogsRouter.post('/',basicAuthMiddleware, validateBlogInput, (req: Request, res:
     if (!errors.isEmpty()) {
         const errorsMessages = errors.array().map((error) => ({
             message: error.msg,
-            field: (error as ValidationError & { path: string }).path
+            field: (error as FieldValidationError).path // Use correct type
         }));
         return res.status(400).json({ errorsMessages });
     }
