@@ -6,6 +6,5 @@ export const testingRouter = Router();
 testingRouter.delete("/testing/all-data", (req: Request, res: Response) => {
     db.blogs = [];
     db.posts = [];
-
     return res.sendStatus(204);
 });
