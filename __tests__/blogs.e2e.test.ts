@@ -1,6 +1,5 @@
 import {req} from './test-helpers'
-import blogs from "../src/routes/blogs-router"
-import {SETTINGS} from '../src/settings'
+
 
 describe('/blogs', () => {
     //beforeAll(async () => {

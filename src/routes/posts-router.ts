@@ -1,13 +1,13 @@
 import {Request, Response, Router} from "express";
 import {validatePostInput} from "../validation/express-validator";
-import {posts} from "../db/db";
+import {db} from "../db/db";
 import { validationResult } from 'express-validator';
 import {postsRepository} from "../Repository/postsRepository";
 import {basicAuthMiddleware} from "../validation/basicAuthMiddleware";
 export const postsRouter = Router();
 
 postsRouter.get('/', (req: Request, res: Response) => {
-    res.status(200).json(posts);
+    res.status(200).json(db.posts);
 })
 postsRouter.get('/:id', (req: Request , res: Response) => {
         const postId = (req.params.id);

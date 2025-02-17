@@ -1,7 +1,7 @@
 import {Request, Response, Router} from "express";
 import {SETTINGS} from "../settings";
 import app from "express";
-import {blogs} from "../db/db";
+import {db} from "../db/db";
 import {blogsRepository} from "../Repository/blogsRepository";
 import {basicAuthMiddleware} from "../validation/basicAuthMiddleware";
 import {validateBlogInput} from "../validation/express-validator";
@@ -10,7 +10,7 @@ export const blogsRouter = Router();
 
 
 blogsRouter.get('/', (req: Request, res: Response) => {
-    res.status(200).json(blogs);
+    res.status(200).json(db.blogs);
 })
 blogsRouter.get('/:id', (req: Request , res: Response) => {
         const blogId = (req.params.id);

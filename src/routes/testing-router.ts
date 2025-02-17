@@ -1,5 +1,5 @@
 import { Request, Response, Router } from "express";
-import { db } from "../db/db"; // Import the data arrays
+import {db} from "../db/db"; // Import the data arrays
 
 export const testingRouter = Router();
 

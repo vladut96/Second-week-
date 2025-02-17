@@ -1,7 +1,5 @@
 import {req} from './test-helpers'
-import {SETTINGS} from '../src/settings'
 
-import posts from "../src/routes/posts-router";
 
 describe('/posts', () => {
      beforeAll(async () => {
