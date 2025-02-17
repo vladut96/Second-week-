@@ -1,8 +1,8 @@
 import express from 'express'
 import cors from 'cors'
 import {SETTINGS} from "./settings";
-import postsRouter from "./routes/posts-router";
-import blogsRouter from "./routes/blogs-router";
+import {postsRouter} from "./routes/posts-router";
+import {blogsRouter} from "./routes/blogs-router";
 import {testingRouter} from "./routes/testing-router";
 
 export const app = express() // создать приложение
