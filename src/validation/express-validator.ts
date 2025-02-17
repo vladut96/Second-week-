@@ -19,6 +19,9 @@ export const validatePostInput = [
         .bail()
         .isString().withMessage('Short description must be a string')
         .bail()
+        .trim()
+        .notEmpty().withMessage('Short description cannot be empty')
+        .bail()
         .isLength({ max: 100 }).withMessage('Short description must be ≤100 characters'),
 
     check('content')
