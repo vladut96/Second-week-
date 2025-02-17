@@ -19,9 +19,7 @@ postsRouter.get('/:id', (req: Request , res: Response) => {
     return  res.status(200).json(foundPost);
 
     });
-postsRouter.post(
-    '/',
-    basicAuthMiddleware, validatePostInput, handleValidationErrors, (req: Request, res: Response) => {
+postsRouter.post('/', basicAuthMiddleware, validatePostInput, handleValidationErrors, (req: Request, res: Response) => {
         const { title, shortDescription, content, blogId } = req.body;
 
         try {
@@ -30,11 +28,8 @@ postsRouter.post(
         } catch (error) {
             return res.status(404).json({ message: 'Post not found' });
         }
-    }
-);
-postsRouter.put(
-    '/:id',
-    basicAuthMiddleware, validatePostInput, handleValidationErrors, (req: Request, res: Response) => {
+    });
+postsRouter.put('/:id', basicAuthMiddleware, validatePostInput, handleValidationErrors, (req: Request, res: Response) => {
         const { id } = req.params;
         const { title, shortDescription, content, blogId } = req.body;
 
@@ -44,9 +39,7 @@ postsRouter.put(
             return res.status(404).json({ message: 'Blog not found' });
         }
         return res.sendStatus(204);
-    }
-);
-
+    });
 postsRouter.delete("/:id", basicAuthMiddleware, (req: Request, res: Response) => {
     const postId = req.params.id;
     const isDeleted = postsRepository.deletePostById(postId);

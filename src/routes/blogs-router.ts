@@ -29,9 +29,7 @@ blogsRouter.post('/',basicAuthMiddleware, validateBlogInput, handleValidationErr
         return res.status(404).json({ message: 'Blog not found' });
     }
 });
-blogsRouter.put(
-    '/:id',
-    basicAuthMiddleware, validateBlogInput, handleValidationErrors, (req: Request, res: Response) => {
+blogsRouter.put('/:id', basicAuthMiddleware, validateBlogInput, handleValidationErrors, (req: Request, res: Response) => {
         const { id } = req.params;
         const { name, description, websiteUrl } = req.body;
 
@@ -41,8 +39,7 @@ blogsRouter.put(
             return res.status(404).json({ message: 'Blog not found' });
         }
         return res.sendStatus(204);
-    }
-);
+    });
 blogsRouter.delete("/:id", basicAuthMiddleware, (req: Request, res: Response) => {
     const blogId = req.params.id;
     const isDeleted = blogsRepository.deleteBlogById(blogId);
