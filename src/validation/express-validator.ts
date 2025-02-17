@@ -1,29 +1,43 @@
 import {NextFunction, Request, RequestHandler} from "express";
 import {body, check, ValidationError, validationResult} from "express-validator";
+import {blogsRepository} from "../Repository/blogsRepository";
 
 
 export const validatePostInput = [
-    check("title")
-        .isString()
-        .isLength({ max: 30 })
-        .withMessage("Title must be maximum 30 characters long"),
+    check('title')
+        .exists().withMessage('Title is required')
+        .bail()
+        .isString().withMessage('Title must be a string')
+        .bail()
+        .isLength({ max: 30 }).withMessage('Title must be ≤30 characters'),
 
-    check("shortDescription")
-        .exists()
-        .withMessage("Short description is required")
-        .isString()
-        .isLength({ max: 100 })
-        .withMessage("Short description must be maximum 100 characters long"),
+    check('shortDescription')
+        .exists().withMessage('Short description is required')
+        .bail()
+        .isString().withMessage('Short description must be a string')
+        .bail()
+        .isLength({ max: 100 }).withMessage('Short description must be ≤100 characters'),
 
-    check("content")
-        .isString()
-        .isLength({ min: 1, max: 1000 })
-        .withMessage("Content must be between 1 and 1000 characters long"),
+    check('content')
+        .exists().withMessage('Content is required')
+        .bail()
+        .isString().withMessage('Content must be a string')
+        .bail()
+        .isLength({ max: 1000 }).withMessage('Content must be ≤1000 characters'),
 
-    check("blogId")
-        .isString()
-        .notEmpty()
-        .withMessage("Blog ID is required"),
+    check('blogId')
+        .exists().withMessage('Blog ID is required')
+        .bail()
+        .isString().withMessage('Blog ID must be a string')
+        .bail()
+        .custom(async (blogId) => {
+            const blog = blogsRepository.getBlogById(blogId);
+            if (!blog) {
+                throw new Error('Blog not found');
+            }
+            return true;
+        })
+        .withMessage('Blog not found'),
 ];
 
 export const validateBlogInput = [
@@ -59,9 +73,9 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
     if (!errors.isEmpty()) {
         const errorsMessages = errors
             .array({ onlyFirstError: true }) // Return only the first error per field
-            .map((err) => ({
-                message: err.msg,
-                field: (err as ValidationError & { path: string }).path,
+            .map((error) => ({
+                message: error.msg,
+                field: (error as ValidationError & { path: string }).path,
             }));
 
         return res.status(400).json({ errorsMessages });
