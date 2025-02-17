@@ -13,7 +13,7 @@ app.get('/', (req, res) => {
     res.status(200).json({version: '1.0'})
 })
 
-app.use('', testingRouter);
+app.use('/testing', testingRouter);
 app.use('/posts', postsRouter);
 app.use('/blogs', blogsRouter);
 
