@@ -56,10 +56,12 @@ export const validateBlogInput = [
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        const errorsMessages = errors.array().map((err) => ({
-            message: err.msg,
-            field: (err as ValidationError & { path: string }).path,
-        }));
+        const errorsMessages = errors
+            .array({ onlyFirstError: true }) // Return only the first error per field
+            .map((err) => ({
+                message: err.msg,
+                field: (err as ValidationError & { path: string }).path,
+            }));
 
         return res.status(400).json({ errorsMessages });
     }
