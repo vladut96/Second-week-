@@ -1,6 +1,6 @@
-import { Blogs, PostViewModel} from "../types/types";
+import { BlogViewModel, PostViewModel} from "../types/types";
 
-export const blogs : Blogs[] = [];
+export const blogs : BlogViewModel[] = [];
 export const posts : PostViewModel[] = [];
 
 
