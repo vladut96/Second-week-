@@ -46,7 +46,7 @@ export const validateBlogInput = [
         .exists().withMessage('Website URL is required')
         .bail()
         .trim()
-        .notEmpty().withMessage("Website URL is required")
+        .notEmpty()
         .isString()
         .isLength({ max: 100 }).withMessage("Website URL must not exceed 100 characters")
         .matches(/^https:\/\/([a-zA-Z0-9_-]+\.)+[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*\/?$/)

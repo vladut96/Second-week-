@@ -23,11 +23,11 @@ blogsRouter.get('/:id', (req: Request , res: Response) => {
 blogsRouter.post('/',basicAuthMiddleware, validateBlogInput, (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        const errorsMessages = errors.array().map((error) => ({
-            message: error.msg,
-            field: (error as FieldValidationError).path // Use correct type
-        }));
-        return res.status(400).json({ errorsMessages });
+        const firstError = errors.array()[0];
+        return res.status(400).json({
+            message: firstError.msg,
+            field: firstError.param
+        });
     }
     const { name, description, websiteUrl } = req.body;
     try {
