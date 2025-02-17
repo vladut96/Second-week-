@@ -17,14 +17,15 @@ export const validatePostInput = [
 
     check("content")
         .isString()
-        .isLength({ min: 1 })
-        .withMessage("Content is required"),
+        .isLength({ min: 1, max: 1000 })
+        .withMessage("Content must be between 1 and 1000 characters long"),
 
     check("blogId")
         .isString()
         .notEmpty()
         .withMessage("Blog ID is required"),
 ];
+
 export const validateBlogInput = [
     check("name")
         .exists().withMessage('Name is required')
