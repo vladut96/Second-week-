@@ -21,7 +21,6 @@ blogsRouter.get('/:id', (req: Request , res: Response) => {
         return res.status(200).json(foundBlog);
 });
 blogsRouter.post('/',basicAuthMiddleware, validateBlogInput, handleValidationErrors, (req: Request, res: Response) => {
-    const errors = validationResult(req);
     const { name, description, websiteUrl } = req.body;
     try {
         const newBlog = blogsRepository.createBlog({ name, description, websiteUrl });
@@ -30,23 +29,20 @@ blogsRouter.post('/',basicAuthMiddleware, validateBlogInput, handleValidationErr
         return res.status(404).json({ message: 'Blog not found' });
     }
 });
-blogsRouter.put('/:id', basicAuthMiddleware, validateBlogInput, (req: Request, res: Response) => {
-
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            const firstError = errors.array()[0];
-            return res.status(400).json({ error: firstError });
-        }
+blogsRouter.put(
+    '/:id',
+    basicAuthMiddleware, validateBlogInput, handleValidationErrors, (req: Request, res: Response) => {
         const { id } = req.params;
         const { name, description, websiteUrl } = req.body;
 
-        const isUpdated = blogsRepository.updateBlog(id, {name, description, websiteUrl});
+        const isUpdated = blogsRepository.updateBlog(id, { name, description, websiteUrl });
 
         if (!isUpdated) {
             return res.status(404).json({ message: 'Blog not found' });
         }
         return res.sendStatus(204);
-    });
+    }
+);
 blogsRouter.delete("/:id", basicAuthMiddleware, (req: Request, res: Response) => {
     const blogId = req.params.id;
     const isDeleted = blogsRepository.deleteBlogById(blogId);

@@ -1,5 +1,5 @@
 import {Request, Response, Router} from "express";
-import {validatePostInput} from "../validation/express-validator";
+import {handleValidationErrors, validatePostInput} from "../validation/express-validator";
 import {db} from "../db/db";
 import {ValidationError, validationResult} from 'express-validator';
 import {postsRepository} from "../Repository/postsRepository";
@@ -19,40 +19,34 @@ postsRouter.get('/:id', (req: Request , res: Response) => {
     return  res.status(200).json(foundPost);
 
     });
-postsRouter.post('/', basicAuthMiddleware, validatePostInput, (req: Request, res: Response) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        const errorsMessages = errors.array().map((error) => ({
-            message: error.msg,
-            field: (error as ValidationError & { path: string }).path
-        }));
-        return res.status(400).json({ errorsMessages });
-    }
-    const { title, shortDescription, content, blogId } = req.body;
-    try {
-        const newPost = postsRepository.createPost({ title, shortDescription, content, blogId });
-        return res.status(201).json(newPost);
-    } catch (error) {
-        return res.status(404).json({ message: 'Post not found' });
-    }
-});
-postsRouter.put('/:id', basicAuthMiddleware, validatePostInput, (req: Request, res: Response) => {
+postsRouter.post(
+    '/',
+    basicAuthMiddleware, validatePostInput, handleValidationErrors, (req: Request, res: Response) => {
+        const { title, shortDescription, content, blogId } = req.body;
 
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        const firstError = errors.array()[0];
-        return res.status(400).json({ error: firstError });
+        try {
+            const newPost = postsRepository.createPost({ title, shortDescription, content, blogId });
+            return res.status(201).json(newPost);
+        } catch (error) {
+            return res.status(404).json({ message: 'Post not found' });
+        }
     }
-    const { id } = req.params;
-    const { title, shortDescription, content, blogId } = req.body;
+);
+postsRouter.put(
+    '/:id',
+    basicAuthMiddleware, validatePostInput, handleValidationErrors, (req: Request, res: Response) => {
+        const { id } = req.params;
+        const { title, shortDescription, content, blogId } = req.body;
 
-    const isUpdated = postsRepository.updatePost(id, {title, shortDescription, content, blogId});
+        const isUpdated = postsRepository.updatePost(id, { title, shortDescription, content, blogId });
 
-    if (!isUpdated) {
-        return res.status(404).json({ message: 'Blog not found' });
+        if (!isUpdated) {
+            return res.status(404).json({ message: 'Blog not found' });
+        }
+        return res.sendStatus(204);
     }
-    return res.sendStatus(204);
-});
+);
+
 postsRouter.delete("/:id", basicAuthMiddleware, (req: Request, res: Response) => {
     const postId = req.params.id;
     const isDeleted = postsRepository.deletePostById(postId);
