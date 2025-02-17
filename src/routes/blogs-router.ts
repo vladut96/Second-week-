@@ -4,7 +4,7 @@ import app from "express";
 import {db} from "../db/db";
 import {blogsRepository} from "../Repository/blogsRepository";
 import {basicAuthMiddleware} from "../validation/basicAuthMiddleware";
-import {validateBlogInput} from "../validation/express-validator";
+import {handleValidationErrors, validateBlogInput} from "../validation/express-validator";
 import {FieldValidationError, validationResult} from "express-validator";
 export const blogsRouter = Router();
 
@@ -20,15 +20,8 @@ blogsRouter.get('/:id', (req: Request , res: Response) => {
         }
         return res.status(200).json(foundBlog);
 });
-blogsRouter.post('/',basicAuthMiddleware, validateBlogInput, (req: Request, res: Response) => {
+blogsRouter.post('/',basicAuthMiddleware, validateBlogInput, handleValidationErrors, (req: Request, res: Response) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        const firstError = errors.array()[0];
-        return res.status(400).json({
-            message: firstError.msg,
-            field: firstError.param
-        });
-    }
     const { name, description, websiteUrl } = req.body;
     try {
         const newBlog = blogsRepository.createBlog({ name, description, websiteUrl });
