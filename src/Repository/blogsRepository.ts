@@ -39,7 +39,7 @@ export const blogsRepository: IBlogsRepository = {
             description,
             websiteUrl,
             createdAt: new Date(),
-            isMembership: true
+            isMembership: false
         };
 
         await getBlogsCollection().insertOne(newBlog);
