@@ -6,9 +6,7 @@ import {getPostsCollection} from "../db/mongoDB";
 export const postsRouter = Router();
 
 postsRouter.get('/', async (req: Request, res: Response) => {
-    const posts = await getPostsCollection()
-        .find({}, { projection: { _id: 0 } })
-        .toArray();
+    const posts = await getPostsCollection().find().toArray();
     res.status(200).json(posts);
 })
 postsRouter.get('/:id', async (req: Request , res: Response) => {
