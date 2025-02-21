@@ -1,8 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import { PostInputModel, PostViewModel } from "../types/types";
+import {BlogViewModel, PostInputModel, PostViewModel} from "../types/types";
 import { getBlogsCollection, getPostsCollection } from "../db/mongoDB";
 
 interface IPostsRepository {
+    getPosts(): Promise<PostViewModel[]>;
     getPostById(postId: string): Promise<PostViewModel | null>;
     createPost(data: PostInputModel): Promise<PostViewModel>;
     updatePost(id: string, data: PostInputModel): Promise<boolean>;
@@ -21,6 +22,10 @@ const mapToViewModel = (post: any): PostViewModel => {
 };
 
 export const postsRepository: IPostsRepository = {
+    async getPosts() {
+        const posts = await getPostsCollection().find().toArray();
+        return posts.map(mapToViewModel);
+    },
     async getPostById(postId: string) {
         const post = await getPostsCollection().findOne({ id: postId });
         return post ? mapToViewModel(post) : null;
