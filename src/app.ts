@@ -13,8 +13,8 @@ app.get('/', (req, res) => {
     res.status(200).json({version: '1.0'})
 })
 
-app.use('/testing', testingRouter);
-app.use('/posts', postsRouter);
-app.use('/blogs', blogsRouter);
+app.use(SETTINGS.PATH.TESTING, testingRouter);
+app.use(SETTINGS.PATH.POSTS, postsRouter);
+app.use(SETTINGS.PATH.BLOGS, blogsRouter);
 
 

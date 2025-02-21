@@ -1,25 +1,33 @@
-import {MongoClient, ServerApiVersion} from 'mongodb';
-const uri = "mongodb+srv://admin:admin@learning.7fe0l.mongodb.net/?retryWrites=true&w=majority&appName=Learning";
+import { MongoClient, Collection } from 'mongodb';
+import { SETTINGS } from "../settings";
+import * as dotenv from 'dotenv';
+import {BlogInputModel, BlogViewModel, PostInputModel} from "../types/types";
+dotenv.config();
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
+export let postsCollection: Collection<PostInputModel>;
+export let blogsCollection: Collection<BlogInputModel>;
 
-async function run() {
+export async function runDb(url: string): Promise<boolean> {
+    let client = new MongoClient(url);
+
     try {
-        // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
-        // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
-    } finally {
-        // Ensures that the client will close when you finish/error
+        const db = client.db('test');
+
+        blogsCollection = db.collection(SETTINGS.PATH.BLOGS);
+        postsCollection = db.collection(SETTINGS.PATH.POSTS);
+
+        await db.command({ ping: 1 });
+        console.log("✅ Connected to MongoDB successfully!");
+
+        return true;
+    } catch (e) {
+        console.error("❌ MongoDB Connection Error:", e);
         await client.close();
+        return false;
     }
 }
-run().catch(console.dir);
+console.log("🔍 MONGO_URL:", SETTINGS.MONGO_URL);
+if (!SETTINGS.MONGO_URL) {
+    throw new Error("❌ MONGO_URL is undefined. Check your .env file.");
+}

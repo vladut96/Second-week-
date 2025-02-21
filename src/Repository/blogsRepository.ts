@@ -1,46 +1,61 @@
 import { v4 as uuidv4 } from 'uuid';
-import {db} from "../db/db";
-import {BlogInputModel, BlogViewModel, PostInputModel} from "../types/types";
+import { blogsCollection } from "../db/mongoDB";
+import { BlogInputModel, BlogViewModel } from "../types/types";
 
-export const blogsRepository = {
-    getBlogs() {
-        return db.blogs
-    },
-    getBlogById(blogId: string) {
-    return db.blogs.find(b => b.id === blogId) || null;
-},
-createBlog({ name, description, websiteUrl} : BlogInputModel)
-{
-    const newBlog = {
-        id: uuidv4(),
-        name,
-        description,
-        websiteUrl
+interface IBlogsRepository {
+    getBlogs(): Promise<BlogViewModel[]>;
+    getBlogById(id: string): Promise<BlogViewModel | null>;
+    createBlog(blogData: BlogInputModel): Promise<BlogViewModel>;
+    updateBlog(id: string, updateData: BlogInputModel): Promise<boolean>;
+    deleteBlogById(id: string): Promise<boolean>;
+}
+
+function mapToBlogViewModel(blog: any): BlogViewModel {
+    return {
+        id: blog.id,
+        name: blog.name,
+        description: blog.description,
+        websiteUrl: blog.websiteUrl,
+        createdAt: blog.createdAt.toISOString(),
+        isMembership: blog.isMembership || false
     };
-    db.blogs.push(newBlog);
-    return newBlog;
-},
-    updateBlog(id: string, updateData: BlogInputModel): boolean {
-        const blogIndex = db.blogs.findIndex(b => b.id === id);
+}
 
-        if (blogIndex === -1) {
-            return false;
-        }
-
-        db.blogs[blogIndex] = {
-            ...db.blogs[blogIndex],
-            ...updateData
-        };
-        return true;
+export const blogsRepository: IBlogsRepository = {
+    async getBlogs(): Promise<BlogViewModel[]> {
+        const blogs = await blogsCollection.find().toArray();
+        return blogs.map(mapToBlogViewModel);
     },
-    deleteBlogById(postId: string): boolean {
-        const blogIndex = db.blogs.findIndex(p => p.id === postId);
 
-        if (blogIndex === -1) {
-            return false;
-        }
+    async getBlogById(id: string): Promise<BlogViewModel | null> {
+        const blog = await blogsCollection.findOne({ id });
+        return blog ? mapToBlogViewModel(blog) : null; // Map single blog to BlogViewModel
+    },
 
-        db.blogs.splice(blogIndex, 1);
-        return true;
+    async createBlog({ name, description, websiteUrl }): Promise<BlogViewModel> {
+        const newBlog = {
+            id: uuidv4(),
+            name,
+            description,
+            websiteUrl,
+            createdAt: new Date().toISOString(),
+            isMembership: true
+        };
+
+        await blogsCollection.insertOne(newBlog);
+        return mapToBlogViewModel(newBlog); // Return mapped BlogViewModel
+    },
+
+    async updateBlog(id: string, updateData: BlogInputModel): Promise<boolean> {
+        const result = await blogsCollection.updateOne(
+            { id },
+            { $set: updateData }
+        );
+        return result.matchedCount > 0;
+    },
+
+    async deleteBlogById(id: string): Promise<boolean> {
+        const result = await blogsCollection.deleteOne({ id });
+        return result.deletedCount > 0;
     }
 };

@@ -20,6 +20,7 @@ export interface PostViewModel {
     content: string;
     blogId: string;
     blogName: string;
+    createdAt: string;
 }
 export interface BlogInputModel {
     name: string;
@@ -31,6 +32,8 @@ export interface BlogViewModel {
   name: string;
   description: string;
   websiteUrl: string;
+  createdAt: string;
+  isMembership: boolean;
 }
 
 

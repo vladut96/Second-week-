@@ -1,48 +1,58 @@
 import { v4 as uuidv4 } from 'uuid';
-import {db} from "../db/db";
 import { PostInputModel, PostViewModel} from "../types/types";
+import {blogsCollection, postsCollection} from "../db/mongoDB";
 
-export const postsRepository = {
-    getPostById(postId: string) {
-            return db.posts.find(p => p.id === postId) || null;
+interface IPostsRepository {
+    getPostById(postId: string): Promise<PostViewModel | null>;
+    createPost(data: PostInputModel): Promise<PostViewModel>;
+    updatePost(id: string, data: PostInputModel): Promise<boolean>;
+    deletePostById(id: string): Promise<boolean>;
+}
+const mapToViewModel = (post: any): PostViewModel => {
+    return {
+        id: post.id,
+        title: post.title,
+        shortDescription: post.shortDescription,
+        content: post.content,
+        blogId: post.blogId,
+        blogName: post.blogName,
+        createdAt: post.createdAt.toISOString()
+    };
+};
+
+export const postsRepository: IPostsRepository = {
+    async getPostById(postId: string) {
+        const post = await postsCollection.findOne({ id: postId });
+        return post ? mapToViewModel(post) : null;
     },
-    createPost({ title, shortDescription, content, blogId } : PostInputModel){
-        const blogger = db.blogs.find(blogger => blogger.id === blogId);
+
+    async createPost({ title, shortDescription, content, blogId }) {
+        const blog = await blogsCollection.findOne({ id: blogId });
+        if (!blog) throw new Error('Not found');
 
         const newPost = {
             id: uuidv4(),
             title,
             shortDescription,
             content,
-            blogId ,
-            // @ts-ignore
-            blogName : blogger.name,
+            blogId,
+            blogName: blog.name,
+            createdAt: new Date().toISOString()
         };
-        // @ts-ignore
-        db.posts.push(newPost);
-        return newPost;
-    }, updatePost(id: string, updateData: PostInputModel): boolean {
-        const postIndex = db.posts.findIndex(b => b.id === id);
 
-        if (postIndex === -1) {
-            return false;
-        }
-
-
-        db.posts[postIndex] = {
-            ...db.posts[postIndex],
-            ...updateData
-        };
-        return true;
+        await postsCollection.insertOne(newPost);
+        return mapToViewModel(newPost);
     },
-    deletePostById(postId: string): boolean {
-        const postIndex = db.posts.findIndex(p => p.id === postId);
+    async updatePost(id: string, updateData: PostInputModel): Promise<boolean> {
+        const result = await postsCollection.updateOne(
+            { id },
+            { $set: updateData }
+        );
+        return result.matchedCount > 0;
+    },
 
-        if (postIndex === -1) {
-            return false;
-        }
-
-        db.posts.splice(postIndex, 1);
-        return true;
-    }
+    async deletePostById(postId: string): Promise<boolean> {
+        const result = await postsCollection.deleteOne({ id: postId });
+        return result.deletedCount > 0;
+    },
 };

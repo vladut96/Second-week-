@@ -1,4 +1,4 @@
-import {NextFunction, Request, RequestHandler} from "express";
+import {NextFunction, Request, Response } from "express";
 import {body, check, ValidationError, validationResult} from "express-validator";
 import {blogsRepository} from "../Repository/blogsRepository";
 
@@ -86,7 +86,7 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
                 field: (error as ValidationError & { path: string }).path,
             }));
 
-        return res.status(400).json({ errorsMessages });
+        res.status(400).json({ errorsMessages });
     }
     next();
 };

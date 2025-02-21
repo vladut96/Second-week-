@@ -6,6 +6,9 @@ export const SETTINGS = {
     PORT: process.env.PORT || 3003,
     PATH: {
         TESTING: '/testing',
-        VIDEOS: '/videos',
+        POSTS: '/posts',
+        BLOGS: '/blogs',
     },
+    MONGO_URL: 'mongodb+srv://admin:admin@learning.7fe0l.mongodb.net/?retryWrites=true&w=majority&appName=Learning',
+
 }

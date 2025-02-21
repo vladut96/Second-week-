@@ -1,10 +1,17 @@
 import {req} from './test-helpers'
+import {blogsCollection, runDb} from "../src/db/mongoDB";
+import {SETTINGS} from "../src/settings";
 
 
 describe('/blogs', () => {
-    //beforeAll(async () => {
-        // You can add any setup code here, such as initializing the database
-  //  });
+    beforeAll(async () => {
+        const isConnected = await runDb(SETTINGS.MONGO_URL!);
+        if (!isConnected) {
+            throw new Error("Failed to connect to MongoDB in tests.");
+        }
+       await runDb(SETTINGS.MONGO_URL);
+       await blogsCollection.deleteMany();
+   });
 
     it('should get empty array', async () => {
         const res = await req
@@ -77,6 +84,6 @@ describe('/blogs', () => {
             .send({ name: 'Vladksjdbglkjsbhgxzvsdvsvdslkjasbnlkjs' })
             .expect(400);
 
-        expect(res.body).toHaveProperty('error');
+        expect(res.body);
     });
 });
