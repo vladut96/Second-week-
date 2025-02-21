@@ -1,15 +1,18 @@
 import { Request, Response, Router } from "express";
-import { blogsCollection, postsCollection } from "../db/mongoDB"; // Import MongoDB collections
+import { getBlogsCollection, getPostsCollection } from "../db/mongoDB";
 
 export const testingRouter = Router();
 
-testingRouter.delete('/all-data', async (req: Request, res: Response) => {
+testingRouter.delete("/all-data", async (req: Request, res: Response) => {
         try {
+                const blogsCollection = getBlogsCollection();
+                const postsCollection = getPostsCollection();
+
                 await blogsCollection.deleteMany({});
                 await postsCollection.deleteMany({});
-                return res.sendStatus(204);
+                res.sendStatus(204);
         } catch (error) {
                 console.error("Error deleting all data:", error);
-                return res.status(500).send({ error: { message: "Failed to delete all data" } });
+                res.status(500).json({ message: "Internal server error" });
         }
 });

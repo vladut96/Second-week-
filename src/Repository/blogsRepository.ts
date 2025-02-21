@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { blogsCollection } from "../db/mongoDB";
+import { getBlogsCollection } from "../db/mongoDB";
 import { BlogInputModel, BlogViewModel } from "../types/types";
 
 interface IBlogsRepository {
@@ -23,12 +23,12 @@ function mapToBlogViewModel(blog: any): BlogViewModel {
 
 export const blogsRepository: IBlogsRepository = {
     async getBlogs(): Promise<BlogViewModel[]> {
-        const blogs = await blogsCollection.find().toArray();
+        const blogs = await getBlogsCollection().find().toArray();
         return blogs.map(mapToBlogViewModel);
     },
 
     async getBlogById(id: string): Promise<BlogViewModel | null> {
-        const blog = await blogsCollection.findOne({ id });
+        const blog = await getBlogsCollection().findOne({ id });
         return blog ? mapToBlogViewModel(blog) : null; // Map single blog to BlogViewModel
     },
 
@@ -42,12 +42,12 @@ export const blogsRepository: IBlogsRepository = {
             isMembership: true
         };
 
-        await blogsCollection.insertOne(newBlog);
+        await getBlogsCollection().insertOne(newBlog);
         return mapToBlogViewModel(newBlog); // Return mapped BlogViewModel
     },
 
     async updateBlog(id: string, updateData: BlogInputModel): Promise<boolean> {
-        const result = await blogsCollection.updateOne(
+        const result = await getBlogsCollection().updateOne(
             { id },
             { $set: updateData }
         );
@@ -55,7 +55,7 @@ export const blogsRepository: IBlogsRepository = {
     },
 
     async deleteBlogById(id: string): Promise<boolean> {
-        const result = await blogsCollection.deleteOne({ id });
+        const result = await getBlogsCollection().deleteOne({ id });
         return result.deletedCount > 0;
     }
 };

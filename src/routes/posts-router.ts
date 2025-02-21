@@ -2,11 +2,11 @@ import {Request, Response, Router} from "express";
 import {handleValidationErrors, validatePostInput} from "../validation/express-validator";
 import {postsRepository} from "../Repository/postsRepository";
 import {basicAuthMiddleware} from "../validation/basicAuthMiddleware";
-import {postsCollection} from "../db/mongoDB";
+import {getPostsCollection} from "../db/mongoDB";
 export const postsRouter = Router();
 
 postsRouter.get('/', async (req: Request, res: Response) => {
-    const posts = await postsCollection.find().toArray();
+    const posts = await getPostsCollection().find().toArray();
     res.status(200).json(posts);
 })
 postsRouter.get('/:id', async (req: Request , res: Response) => {

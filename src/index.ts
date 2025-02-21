@@ -1,7 +1,6 @@
-import {app} from './app'
-import {SETTINGS} from './settings'
-import {runDb} from "./db/mongoDB";
-
+import { app } from './app';
+import { SETTINGS } from './settings';
+import { runDb } from "./db/mongoDB";
 
 const startApp = async () => {
     const MONGO_URL = process.env.MONGO_URL;
@@ -16,11 +15,11 @@ const startApp = async () => {
         console.error("❌ Failed to connect to MongoDB. Exiting...");
         process.exit(1);
     }
+
+    // Start the server only after the database connection is established
+    app.listen(SETTINGS.PORT, () => {
+        console.log('...server started in port ' + SETTINGS.PORT);
+    });
 };
-
-app.listen(SETTINGS.PORT, () => {
-    console.log('...server started in port ' + SETTINGS.PORT)
-})
-
 
 startApp();

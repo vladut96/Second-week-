@@ -1,21 +1,18 @@
-import { MongoClient, Collection } from 'mongodb';
+import { MongoClient, Db, Collection } from 'mongodb';
 import { SETTINGS } from "../settings";
 import * as dotenv from 'dotenv';
-import {BlogInputModel, PostInputModel} from "../types/types";
+import { BlogInputModel, PostInputModel } from "../types/types";
+
 dotenv.config();
 
-export let postsCollection: Collection<PostInputModel>;
-export let blogsCollection: Collection<BlogInputModel>;
+let client: MongoClient;
+let db: Db;
 
 export async function runDb(url: string): Promise<boolean> {
-    let client = new MongoClient(url);
-
     try {
+        client = new MongoClient(url);
         await client.connect();
-        const db = client.db('my-database');
-
-        blogsCollection = db.collection(SETTINGS.PATH.BLOGS);
-        postsCollection = db.collection(SETTINGS.PATH.POSTS);
+        db = client.db('my-database');
 
         await db.command({ ping: 1 });
         console.log("✅ Connected to MongoDB successfully!");
@@ -23,10 +20,26 @@ export async function runDb(url: string): Promise<boolean> {
         return true;
     } catch (e) {
         console.error("❌ MongoDB Connection Error:", e);
-        await client.close();
+        await client?.close();
         return false;
     }
 }
+
+export function getDb(): Db {
+    if (!db) {
+        throw new Error("Database not initialized. Call runDb first.");
+    }
+    return db;
+}
+
+export function getBlogsCollection(): Collection<BlogInputModel> {
+    return getDb().collection(SETTINGS.PATH.BLOGS);
+}
+
+export function getPostsCollection(): Collection<PostInputModel> {
+    return getDb().collection(SETTINGS.PATH.POSTS);
+}
+
 console.log("🔍 MONGO_URL:", process.env.MONGO_URL);
 if (!process.env.MONGO_URL) {
     throw new Error("❌ MONGO_URL is undefined. Check your .env file.");
