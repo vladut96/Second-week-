@@ -34,9 +34,7 @@ describe('/posts', () => {
             // Create test posts
 
             await postsCollection.insertMany([
-                {
-                    id: uuidv4(),
-                    title: 'Post 1',
+                {   title: 'Post 1',
                     shortDescription: 'Desc 1',
                     content: 'Content 1',
                     // @ts-ignore
@@ -81,13 +79,12 @@ describe('/posts', () => {
             });
 
             const post = await postsCollection.insertOne({
-                id: uuidv4(),
                 title: 'Test Post',
                 shortDescription: 'Test Description',
                 content: 'Test Content',
                 blogId: '',
                 blogName: 'Test Blog',
-                createdAt: new Date().toISOString()
+                createdAt: ''
             });
 
             const res = await req

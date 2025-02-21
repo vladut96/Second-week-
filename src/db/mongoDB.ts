@@ -27,7 +27,7 @@ export async function runDb(url: string): Promise<boolean> {
         return false;
     }
 }
-console.log("🔍 MONGO_URL:", SETTINGS.MONGO_URL);
-if (!SETTINGS.MONGO_URL) {
+console.log("🔍 MONGO_URL:", process.env.MONGO_URL);
+if (!process.env.MONGO_URL) {
     throw new Error("❌ MONGO_URL is undefined. Check your .env file.");
 }
