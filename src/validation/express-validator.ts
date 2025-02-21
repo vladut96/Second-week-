@@ -65,12 +65,14 @@ export const validateBlogInput = [
         .isString()
         .isLength({ max: 500 }).withMessage("Description must be maximum 500 characters long"),
 
-    check("blogId")
-        .exists().withMessage("Blog ID is required")
+    check("websiteUrl")
+        .exists().withMessage('Website URL is required')
         .bail()
         .trim()
-        .notEmpty().withMessage("Blog ID cannot be empty")
-        .isUUID().withMessage("Blog ID must be a valid UUID"),
+        .notEmpty()
+        .isString()
+        .isLength({ max: 100 }).withMessage("Website URL must not exceed 100 characters")
+        .isURL({ protocols: ["https"], require_protocol: true }).withMessage("Website URL must be a valid HTTPS URL")
 ];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
