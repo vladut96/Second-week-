@@ -12,7 +12,7 @@ export async function runDb(url: string): Promise<boolean> {
 
     try {
         await client.connect();
-        const db = client.db('3rdWeek');
+        const db = client.db('my-database');
 
         blogsCollection = db.collection(SETTINGS.PATH.BLOGS);
         postsCollection = db.collection(SETTINGS.PATH.POSTS);
