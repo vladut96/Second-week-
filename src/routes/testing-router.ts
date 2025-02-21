@@ -3,7 +3,7 @@ import { blogsCollection, postsCollection } from "../db/mongoDB"; // Import Mong
 
 export const testingRouter = Router();
 
-testingRouter.delete("/all-data", async (req: Request, res: Response) => {
+testingRouter.delete('/all-data', async (req: Request, res: Response) => {
         try {
                 await blogsCollection.deleteMany({});
                 await postsCollection.deleteMany({});
