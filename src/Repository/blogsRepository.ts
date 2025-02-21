@@ -38,7 +38,7 @@ export const blogsRepository: IBlogsRepository = {
             name,
             description,
             websiteUrl,
-            createdAt: new Date().toISOString(),
+            createdAt: new Date(),
             isMembership: true
         };
 

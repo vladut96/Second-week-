@@ -9,6 +9,6 @@ export const SETTINGS = {
         POSTS: '/posts',
         BLOGS: '/blogs',
     },
-    MONGO_URL: 'mongodb+srv://admin:admin@learning.7fe0l.mongodb.net/?retryWrites=true&w=majority&appName=Learning',
+    MONGO_URL: 'mongodb+srv://admin:admin@learning.7fe0l.mongodb.net/my-database?retryWrites=true&w=majority&appName=Learning',
 
 }

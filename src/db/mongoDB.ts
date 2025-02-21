@@ -1,7 +1,7 @@
 import { MongoClient, Collection } from 'mongodb';
 import { SETTINGS } from "../settings";
 import * as dotenv from 'dotenv';
-import {BlogInputModel, BlogViewModel, PostInputModel} from "../types/types";
+import {BlogInputModel, PostInputModel} from "../types/types";
 dotenv.config();
 
 export let postsCollection: Collection<PostInputModel>;
@@ -12,7 +12,7 @@ export async function runDb(url: string): Promise<boolean> {
 
     try {
         await client.connect();
-        const db = client.db('test');
+        const db = client.db('3rdWeek');
 
         blogsCollection = db.collection(SETTINGS.PATH.BLOGS);
         postsCollection = db.collection(SETTINGS.PATH.POSTS);
