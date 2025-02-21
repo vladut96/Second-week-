@@ -69,24 +69,40 @@ export const validateBlogInput = [
         .exists().withMessage('Website URL is required')
         .bail()
         .trim()
-        .notEmpty()
-        .isString()
+        .notEmpty().withMessage("Website URL cannot be empty")
+        .bail()
+        .isString().withMessage("Website URL must be a string")
+        .bail()
         .isLength({ max: 100 }).withMessage("Website URL must not exceed 100 characters")
+        .bail()
         .matches(/^https:\/\/([a-zA-Z0-9_-]+\.)+[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*\/?$/)
-        .withMessage("Website URL must be a valid HTTPS URL")
+        .withMessage("Website URL must be a valid HTTPS URL"),
+
+    check('blogId')
+        .exists().withMessage('Blog ID is required')
+        .bail()
+        .isString().withMessage('Blog ID must be a string')
+        .bail()
+        .custom(async (blogId) => {
+            const blog = await blogsRepository.getBlogById(blogId);
+            if (!blog) {
+                throw new Error('Blog not found');
+            }
+            return true;
+        })
 ];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         const errorsMessages = errors
-            .array({ onlyFirstError: true }) // Return only the first error per field
+            .array() // Return all errors, not just the first one per field
             .map((error) => ({
                 message: error.msg,
                 field: (error as ValidationError & { path: string }).path,
             }));
 
-        res.status(400).json({ errorsMessages });
+        return res.status(400).json({ errorsMessages }); // Return early
     }
-    next();
+    return next();
 };
