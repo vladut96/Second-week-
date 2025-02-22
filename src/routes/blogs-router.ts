@@ -1,7 +1,7 @@
 import {Request, Response, Router} from "express";
 import {blogsRepository} from "../Repository/blogsRepository";
 import {basicAuthMiddleware} from "../validation/basicAuthMiddleware";
-import {handleValidationErrors, validateBlogIdInput, validateBlogInput} from "../validation/express-validator";
+import {handleValidationErrors, validateBlogInput} from "../validation/express-validator";
 export const blogsRouter = Router();
 
 

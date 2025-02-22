@@ -69,11 +69,12 @@ export const validateBlogInput = [
         .exists().withMessage('Website URL is required')
         .bail()
         .trim()
-        .notEmpty()
-        .isString()
-        .isLength({ max: 100 })
+        .notEmpty().withMessage('Website URL must not be empty') // Custom message
+        .bail()
+        .isLength({ max: 100 }).withMessage('Website URL must be ≤100 characters')
+        .bail()
         .matches(/^https:\/\/([a-zA-Z0-9_-]+\.)+[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*\/?$/)
-        .withMessage("Website URL must be a valid HTTPS URL or must not exceed 100 characters")
+        .withMessage('Website URL must be a valid HTTPS URL')
 ];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
