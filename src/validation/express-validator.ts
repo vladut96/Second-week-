@@ -91,7 +91,7 @@ export const handleValidationErrors = (req: Request, res: Response, next: NextFu
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         const errorsMessages = errors
-            .array({ onlyFirstError: true }) // Return only the first error per field
+            .array()
             .map((error) => ({
                 message: error.msg,
                 field: (error as ValidationError & { path: string }).path,
