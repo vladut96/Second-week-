@@ -9,7 +9,7 @@ blogsRouter.get('/', async (req: Request, res: Response) => {
         const blogs = await blogsRepository.getBlogs();
         return res.status(200).json(blogs);
 });
-blogsRouter.get('/:id', validateBlogIdInput, handleValidationErrors, async (req: Request, res: Response) => {
+blogsRouter.get('/:id', async (req: Request, res: Response) => {
 
         const blogId = req.params.id;
         const foundBlog = await blogsRepository.getBlogById(blogId);
