@@ -40,7 +40,7 @@ export const validatePostInput = [
         .isString().withMessage('Blog ID must be a string')
         .bail()
         .custom(async (blogId) => {
-            const blog = blogsRepository.getBlogById(blogId);
+            const blog = await blogsRepository.getBlogById(blogId);
             if (!blog) {
                 throw new Error('Blog not found');
             }
@@ -69,7 +69,7 @@ export const validateBlogInput = [
         .exists().withMessage('Website URL is required')
         .bail()
         .trim()
-        .notEmpty().withMessage('Website URL must not be empty') // Custom message
+        .notEmpty().withMessage('Website URL must not be empty')
         .bail()
         .isLength({ max: 100 }).withMessage('Website URL must be ≤100 characters')
         .bail()
