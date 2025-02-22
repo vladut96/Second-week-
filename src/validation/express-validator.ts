@@ -48,17 +48,6 @@ export const validatePostInput = [
         })
 ];
 
-export const validateBlogIdInput = [check('content')
-    .exists().withMessage('Content is required')
-    .bail()
-    .isString().withMessage('Content must be a string')
-    .bail()
-    .trim()
-    .notEmpty().withMessage('Content cannot be empty') //
-    .bail()
-    .isLength({ max: 1000 }).withMessage('Content must be ≤1000 characters')
-    ]
-
 export const validateBlogInput = [
     check("name")
         .exists().withMessage('Name is required')
@@ -82,9 +71,9 @@ export const validateBlogInput = [
         .trim()
         .notEmpty()
         .isString()
-        .isLength({ max: 100 }).withMessage("Website URL must not exceed 100 characters")
+        .isLength({ max: 100 })
         .matches(/^https:\/\/([a-zA-Z0-9_-]+\.)+[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*\/?$/)
-        .withMessage("Website URL must be a valid HTTPS URL")
+        .withMessage("Website URL must be a valid HTTPS URL or must not exceed 100 characters")
 ];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
