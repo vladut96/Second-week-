@@ -29,7 +29,7 @@ export const blogsRepository: IBlogsRepository = {
 
     async getBlogById(id: string): Promise<BlogViewModel | null> {
         const blog = await getBlogsCollection().findOne({ id });
-        return blog ? mapToBlogViewModel(blog) : null; // Map single blog to BlogViewModel
+        return blog ? mapToBlogViewModel(blog) : null;
     },
 
     async createBlog({ name, description, websiteUrl }): Promise<BlogViewModel> {
