@@ -50,3 +50,4 @@ postsRouter.delete("/:id", basicAuthMiddleware, async (req: Request, res: Respon
     }
     return res.sendStatus(204);
 });
+//
