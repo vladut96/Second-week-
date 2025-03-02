@@ -36,28 +36,14 @@ export interface BlogViewModel {
   isMembership: boolean;
 }
 
+export type Paginator<T> = {
+    pagesCount: number;
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    items: T[]; // Array of items of type T
+};
+type BlogPaginator = Paginator<BlogViewModel>;
 
 
 
-
-
-export interface Video {
-    id: number;
-    title: string;
-    author: string;
-    canBeDownloaded?: boolean;
-    minAgeRestriction?: number | null;
-    createdAt?: string;
-    publicationDate?: string;
-    availableResolutions?: string[];
-}
-export interface Blogs {
-    id: string;
-    name: string;
-    description: string;
-    websiteUrl: string;
-    createdAt: string;
-    isMembership: boolean;
-}
-
-//export interface ICreateVideoResponseSuccess {description: string, data: Video}

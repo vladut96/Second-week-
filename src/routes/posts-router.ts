@@ -18,6 +18,8 @@ postsRouter.get('/:id', async (req: Request , res: Response) => {
     }
     return res.status(200).json(foundPost);
 });
+
+
 postsRouter.post('/', basicAuthMiddleware, validatePostInput, handleValidationErrors, async (req: Request, res: Response) => {
     const { title, shortDescription, content, blogId } = req.body;
     const newPost = await postsRepository.createPost(
