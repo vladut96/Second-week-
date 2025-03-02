@@ -3,14 +3,26 @@ import { getBlogsCollection } from "../db/mongoDB";
 import { BlogInputModel, BlogViewModel } from "../types/types";
 
 interface IBlogsRepository {
-    getBlogs(): Promise<BlogViewModel[]>;
+    getBlogs(params: {
+        searchNameTerm: string | null;
+        sortBy: string;
+        sortDirection: 1 | -1;
+        skip: number;
+        limit: number;
+    }): Promise<BlogViewModel[]>;
+
     getBlogById(id: string): Promise<BlogViewModel | null>;
+
     createBlog(blogData: BlogInputModel): Promise<BlogViewModel>;
+
     updateBlog(id: string, updateData: BlogInputModel): Promise<boolean>;
+
     deleteBlogById(id: string): Promise<boolean>;
+
+    getTotalBlogsCount(searchNameTerm: string | null): Promise<number>;
 }
 
-function mapToBlogViewModel(blog: any): BlogViewModel {
+export function mapToBlogViewModel(blog: any): BlogViewModel {
     return {
         id: blog.id,
         name: blog.name,
@@ -22,8 +34,24 @@ function mapToBlogViewModel(blog: any): BlogViewModel {
 }
 
 export const blogsRepository: IBlogsRepository = {
-    async getBlogs(): Promise<BlogViewModel[]> {
-        const blogs = await getBlogsCollection().find().toArray();
+    async getBlogs({searchNameTerm, sortBy, sortDirection, skip, limit,}: {
+        searchNameTerm: string | null;
+        sortBy: string;
+        sortDirection: 1 | -1;
+        skip: number;
+        limit: number;
+    }): Promise<BlogViewModel[]> {
+        const filter = searchNameTerm
+            ? { name: { $regex: searchNameTerm, $options: 'i' } }
+            : {};
+
+        const blogs = await getBlogsCollection()
+            .find(filter)
+            .sort({ [sortBy]: sortDirection })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+
         return blogs.map(mapToBlogViewModel);
     },
 
@@ -57,5 +85,12 @@ export const blogsRepository: IBlogsRepository = {
     async deleteBlogById(id: string): Promise<boolean> {
         const result = await getBlogsCollection().deleteOne({ id });
         return result.deletedCount > 0;
+    },
+    async getTotalBlogsCount(searchNameTerm: string | null): Promise<number> {
+        const filter = searchNameTerm
+            ? { name: { $regex: searchNameTerm, $options: 'i' } } // Поиск без учёта регистра
+            : {};
+
+        return await getBlogsCollection().countDocuments(filter);
     }
 };

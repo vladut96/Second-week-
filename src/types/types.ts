@@ -41,9 +41,9 @@ export type Paginator<T> = {
     page: number;
     pageSize: number;
     totalCount: number;
-    items: T[]; // Array of items of type T
+    items: T[];
 };
-type BlogPaginator = Paginator<BlogViewModel>;
+
 
 
 

@@ -1,5 +1,5 @@
 import {NextFunction, Request, Response } from "express";
-import {body, check, ValidationError, validationResult} from "express-validator";
+import {check, ValidationError, validationResult} from "express-validator";
 import {blogsRepository} from "../Repository/blogsRepository";
 
 
@@ -47,6 +47,37 @@ export const validatePostInput = [
             return true;
         })
 ];
+export const validatePostInputWithoutId = [
+    check('title')
+        .exists().withMessage('Title is required')
+        .bail()
+        .isString().withMessage('Title must be a string')
+        .bail()
+        .trim()
+        .notEmpty().withMessage('Title cannot be empty')
+        .bail()
+        .isLength({ max: 30 }).withMessage('Title must be ≤30 characters'),
+
+    check('shortDescription')
+        .exists().withMessage('Short description is required')
+        .bail()
+        .isString().withMessage('Short description must be a string')
+        .bail()
+        .trim()
+        .notEmpty().withMessage('Short description cannot be empty')
+        .bail()
+        .isLength({ max: 100 }).withMessage('Short description must be ≤100 characters'),
+
+    check('content')
+        .exists().withMessage('Content is required')
+        .bail()
+        .isString().withMessage('Content must be a string')
+        .bail()
+        .trim()
+        .notEmpty().withMessage('Content cannot be empty') //
+        .bail()
+        .isLength({ max: 1000 }).withMessage('Content must be ≤1000 characters')
+];
 
 export const validateBlogInput = [
     check("name")
@@ -76,6 +107,8 @@ export const validateBlogInput = [
         .matches(/^https:\/\/([a-zA-Z0-9_-]+\.)+[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*\/?$/)
         .withMessage('Website URL must be a valid HTTPS URL')
 ];
+
+
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);

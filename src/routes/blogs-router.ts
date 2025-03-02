@@ -1,14 +1,48 @@
 import {Request, Response, Router} from "express";
-import {blogsRepository} from "../Repository/blogsRepository";
 import {basicAuthMiddleware} from "../validation/basicAuthMiddleware";
-import {handleValidationErrors, validateBlogInput, validatePostInput} from "../validation/express-validator";
-import {Paginator, PostViewModel} from "../types/types"
+import {handleValidationErrors, validateBlogInput, validatePostInputWithoutId}from "../validation/express-validator";
+import {BlogViewModel, Paginator, PostViewModel} from "../types/types"
 import {postsRepository} from "../Repository/postsRepository";
+import {blogsRepository} from "../Repository/blogsRepository";
 export const blogsRouter = Router();
 
 blogsRouter.get('/', async (req: Request, res: Response) => {
-        const blogs = await blogsRepository.getBlogs();
-        return res.status(200).json(blogs);
+    const searchNameTerm = req.query.searchNameTerm as string || null;
+    const sortBy = req.query.sortBy as string || 'createdAt';
+    const sortDirection = req.query.sortDirection === 'asc' ? 1 : -1;
+    const pageNumber = parseInt(req.query.pageNumber as string, 10) || 1;
+    const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
+
+    const skip = (pageNumber - 1) * pageSize;
+    const limit = pageSize;
+
+    const blogs = await blogsRepository.getBlogs({
+        searchNameTerm,
+        sortBy,
+        sortDirection,
+        skip,
+        limit,
+    });
+    const totalCount = await blogsRepository.getTotalBlogsCount(searchNameTerm);
+
+    const pagesCount = Math.ceil(totalCount / pageSize);
+
+    const items = blogs.map(blog => ({
+        id: blog.id,
+        name: blog.name,
+        description: blog.description,
+        websiteUrl: blog.websiteUrl,
+        createdAt: blog.createdAt,
+        isMembership: blog.isMembership || false,
+    }));
+    const response: Paginator<BlogViewModel> = {
+        pagesCount,
+        page: pageNumber,
+        pageSize,
+        totalCount,
+        items,
+    };
+    return res.status(200).json(response);
 });
 blogsRouter.get('/:id', async (req: Request, res: Response) => {
 
@@ -63,7 +97,7 @@ blogsRouter.post('/', basicAuthMiddleware, validateBlogInput, handleValidationEr
             const newBlog = await blogsRepository.createBlog({ name, description, websiteUrl });
             return res.status(201).json(newBlog);
 });
-blogsRouter.post('/:blogId/posts', basicAuthMiddleware, validatePostInput, handleValidationErrors, async (req: Request, res: Response) => {
+blogsRouter.post('/:blogId/posts', basicAuthMiddleware, validatePostInputWithoutId, handleValidationErrors, async (req: Request, res: Response) => {
         const blogId = req.params.blogId;
         const { title, shortDescription, content } = req.body;
         const foundBlog = await blogsRepository.getBlogById(blogId);
