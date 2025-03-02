@@ -1,9 +1,14 @@
 import { v4 as uuidv4 } from 'uuid';
-import { PostInputModel, PostViewModel} from "../types/types";
+import {Paginator , PostInputModel, PostViewModel} from "../types/types";
 import { getBlogsCollection, getPostsCollection } from "../db/mongoDB";
 
 interface IPostsRepository {
-    getPosts(): Promise<PostViewModel[]>;
+    getPosts(params: {
+        sortBy?: string;
+        sortDirection?: 1 | -1;
+        pageNumber?: number;
+        pageSize?: number;
+    }): Promise<Paginator<PostViewModel>>;
     getPostById(postId: string): Promise<PostViewModel | null>;
     createPost(data: PostInputModel): Promise<PostViewModel>;
     updatePost(id: string, data: PostInputModel): Promise<boolean>;
@@ -29,9 +34,31 @@ const mapToViewModel = (post: any): PostViewModel => {
     };
 };
 export const postsRepository: IPostsRepository = {
-    async getPosts() {
-        const posts = await getPostsCollection().find().toArray();
-        return posts.map(mapToViewModel);
+    async getPosts({ sortBy, sortDirection, pageNumber, pageSize }: {
+        sortBy: string;
+        sortDirection: 1 | -1;
+        pageNumber: number;
+        pageSize: number;
+    }): Promise<{ pagesCount: number; page: number; pageSize: number; totalCount: number; items: PostViewModel[] }> {
+
+        const skip = (pageNumber - 1) * pageSize;
+        const limit = pageSize;
+
+        const totalCount = await getPostsCollection().countDocuments();
+
+        const posts = await getPostsCollection()
+            .find({})
+            .sort({ [sortBy]: sortDirection })
+            .skip(skip)
+            .limit(limit)
+            .toArray();
+        return {
+            pagesCount: Math.ceil(totalCount / pageSize),
+            page: pageNumber,
+            pageSize,
+            totalCount,
+            items: posts.map(mapToViewModel),
+        };
     },
     async getPostById(postId: string) {
         const post = await getPostsCollection().findOne({ id: postId });
