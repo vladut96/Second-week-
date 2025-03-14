@@ -7,9 +7,9 @@ export const usersRepository = {
                    { searchLoginTerm?: string; searchEmailTerm?: string; sortBy: string; sortDirection: 1 | -1; pageNumber: number; pageSize: number; }
     ): Promise<Paginator<UserViewModel>> {
         const filter: any = {};
-            filter.$or = [];
-            if (searchLoginTerm) filter.$or.push({ login: { $regex: searchLoginTerm, $options: 'i' } });
-            if (searchEmailTerm) filter.$or.push({ email: { $regex: searchEmailTerm, $options: 'i' } });
+
+        if (searchLoginTerm) filter.login = { $regex: searchLoginTerm, $options: 'i' };
+        if (searchEmailTerm) filter.email = { $regex: searchEmailTerm, $options: 'i' };
 
         const totalCount = await getUsersCollection().countDocuments(filter);
         const users = await getUsersCollection()
