@@ -1,6 +1,6 @@
 import { getUsersCollection } from '../db/mongoDB';
 import { ObjectId } from 'mongodb';
-import {Paginator, UserInputModel, UserViewModel} from '../types/types';
+import {Paginator, UserViewModel} from '../types/types';
 
 export const usersRepository = {
     async getUsers({ searchLoginTerm, searchEmailTerm, sortBy, sortDirection, pageNumber, pageSize }:
@@ -8,10 +8,23 @@ export const usersRepository = {
     ): Promise<Paginator<UserViewModel>> {
         const filter: any = {};
 
-        if (searchLoginTerm) filter.login = { $regex: searchLoginTerm, $options: 'i' };
-        if (searchEmailTerm) filter.email = { $regex: searchEmailTerm, $options: 'i' };
+        if (searchLoginTerm || searchEmailTerm) {
+            filter.$or = []; // Создаём массив условий
 
+            if (searchLoginTerm) {
+                filter.$or.push({ login: { $regex: searchLoginTerm, $options: 'i' } });
+            }
+            if (searchEmailTerm) {
+                filter.$or.push({ email: { $regex: searchEmailTerm, $options: 'i' } });
+            }
+        }
+
+        console.log('📌 MongoDB Filter:', JSON.stringify(filter)); // ✅ Для отладки
+
+        // ✅ Подсчёт количества записей для пагинации
         const totalCount = await getUsersCollection().countDocuments(filter);
+
+        // ✅ Поиск пользователей с сортировкой и пагинацией
         const users = await getUsersCollection()
             .find(filter)
             .sort({ [sortBy]: sortDirection })
