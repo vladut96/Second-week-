@@ -1,6 +1,6 @@
 import {NextFunction, Request, Response } from "express";
 import {check, ValidationError, validationResult} from "express-validator";
-import {blogsRepository} from "../Repository/blogsRepository";
+import {blogsQueryRepository, blogsRepository} from "../Repository/blogsRepository";
 
 
 export const validatePostInput = [
@@ -40,7 +40,7 @@ export const validatePostInput = [
         .isString().withMessage('Blog ID must be a string')
         .bail()
         .custom(async (blogId) => {
-            const blog = await blogsRepository.getBlogById(blogId);
+            const blog = await blogsQueryRepository.getBlogById(blogId);
             if (!blog) {
                 throw new Error('Blog not found');
             }
@@ -78,7 +78,6 @@ export const validatePostInputWithoutId = [
         .bail()
         .isLength({ max: 1000 }).withMessage('Content must be ≤1000 characters')
 ];
-
 export const validateBlogInput = [
     check("name")
         .exists().withMessage('Name is required')
@@ -107,8 +106,24 @@ export const validateBlogInput = [
         .matches(/^https:\/\/([a-zA-Z0-9_-]+\.)+[a-zA-Z0-9_-]+(\/[a-zA-Z0-9_-]+)*\/?$/)
         .withMessage('Website URL must be a valid HTTPS URL')
 ];
+export const validateAuthInput = [
+    check('loginOrEmail')
+        .trim()
+        .notEmpty().withMessage('Login or email is required')
+        .isString().withMessage('Login or email must be a string'),
 
+    check('password')
+        .trim()
+        .notEmpty().withMessage('Password is required')
+        .isString().withMessage('Password must be a string')
+        .isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+];
 
+export const validateUserInput = [
+    check('login').trim().notEmpty().withMessage('Login is required').isString().withMessage('Login must be a string'),
+    check('email').trim().isEmail().withMessage('Invalid email format'),
+    check('password').trim().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);

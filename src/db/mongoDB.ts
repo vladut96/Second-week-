@@ -1,7 +1,7 @@
 import { MongoClient, Db, Collection } from 'mongodb';
 import { SETTINGS } from "../settings";
 import * as dotenv from 'dotenv';
-import { BlogInputModel, PostInputModel } from "../types/types";
+import {BlogInputModel, PostInputModel, UserViewModel} from "../types/types";
 
 dotenv.config();
 
@@ -33,12 +33,17 @@ export function getDb(): Db {
 }
 
 export function getBlogsCollection(): Collection<BlogInputModel> {
-    return getDb().collection(SETTINGS.PATH.BLOGS);
+    return getDb().collection("Blogs");
 }
 
 export function getPostsCollection(): Collection<PostInputModel> {
-    return getDb().collection(SETTINGS.PATH.POSTS);
+    return getDb().collection('Posts');
 }
+
+export function getUsersCollection(): Collection<UserViewModel> {
+    return getDb().collection('Users');
+}
+
 
 console.log("🔍 MONGO_URL:", process.env.MONGO_URL);
 if (!process.env.MONGO_URL) {

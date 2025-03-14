@@ -1,3 +1,4 @@
+import {ObjectId} from "mongodb";
 
 
 export interface FieldError {
@@ -35,7 +36,23 @@ export interface BlogViewModel {
   createdAt: string;
   isMembership: boolean;
 }
-
+export type UserViewModel = {
+    id: string;
+    login: string;
+    email: string;
+    createdAt: string;
+};
+export type UserInputModel = {
+    login: string;
+    password: string;
+    email: string;
+};
+export type UserAuthModel = {
+    _id: ObjectId;
+    login: string;
+    email: string;
+    passwordHash: string; //
+};
 export type Paginator<T> = {
     pagesCount: number;
     page: number;

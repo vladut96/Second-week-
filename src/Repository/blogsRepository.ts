@@ -2,26 +2,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { getBlogsCollection } from "../db/mongoDB";
 import { BlogInputModel, BlogViewModel } from "../types/types";
 
-interface IBlogsRepository {
-    getBlogs(params: {
-        searchNameTerm: string | null;
-        sortBy: string;
-        sortDirection: 1 | -1;
-        skip: number;
-        limit: number;
-    }): Promise<BlogViewModel[]>;
-
-    getBlogById(id: string): Promise<BlogViewModel | null>;
-
-    createBlog(blogData: BlogInputModel): Promise<BlogViewModel>;
-
-    updateBlog(id: string, updateData: BlogInputModel): Promise<boolean>;
-
-    deleteBlogById(id: string): Promise<boolean>;
-
-    getTotalBlogsCount(searchNameTerm: string | null): Promise<number>;
-}
-
 export function mapToBlogViewModel(blog: any): BlogViewModel {
     return {
         id: blog.id,
@@ -32,17 +12,27 @@ export function mapToBlogViewModel(blog: any): BlogViewModel {
         isMembership: blog.isMembership || false
     };
 }
-
-export const blogsRepository: IBlogsRepository = {
-    async getBlogs({searchNameTerm, sortBy, sortDirection, skip, limit,}: {
+interface IBlogsQueryRepository {
+    getBlogs(params: {
         searchNameTerm: string | null;
         sortBy: string;
         sortDirection: 1 | -1;
         skip: number;
         limit: number;
-    }): Promise<BlogViewModel[]> {
+    }): Promise<BlogViewModel[]>;
+    getBlogById(id: string): Promise<BlogViewModel | null>;
+    getTotalBlogsCount(searchNameTerm: string | null): Promise<number>;
+}
+interface IBlogsRepository {
+    createBlog(blogData: BlogInputModel): Promise<BlogViewModel>;
+    updateBlog(id: string, updateData: BlogInputModel): Promise<boolean>;
+    deleteBlogById(id: string): Promise<boolean>;
+}
+
+export const blogsQueryRepository: IBlogsQueryRepository = {
+    async getBlogs({ searchNameTerm, sortBy, sortDirection, skip, limit }) {
         const filter = searchNameTerm
-            ? { name: { $regex: searchNameTerm, $options: 'i' } }
+            ? { name: { $regex: searchNameTerm, $options: 'i' } } // Case-insensitive search
             : {};
 
         const blogs = await getBlogsCollection()
@@ -55,11 +45,20 @@ export const blogsRepository: IBlogsRepository = {
         return blogs.map(mapToBlogViewModel);
     },
 
+    async getTotalBlogsCount(searchNameTerm: string | null): Promise<number> {
+        const filter = searchNameTerm
+            ? { name: { $regex: searchNameTerm, $options: 'i' } } // Case-insensitive search
+            : {};
+
+        return await getBlogsCollection().countDocuments(filter);
+    },
+
     async getBlogById(id: string): Promise<BlogViewModel | null> {
         const blog = await getBlogsCollection().findOne({ id });
         return blog ? mapToBlogViewModel(blog) : null;
     },
-
+};
+export const blogsRepository: IBlogsRepository = {
     async createBlog({ name, description, websiteUrl }): Promise<BlogViewModel> {
         const newBlog = {
             id: uuidv4(),
@@ -71,9 +70,8 @@ export const blogsRepository: IBlogsRepository = {
         };
 
         await getBlogsCollection().insertOne(newBlog);
-        return mapToBlogViewModel(newBlog); // Return mapped BlogViewModel
+        return mapToBlogViewModel(newBlog);
     },
-
     async updateBlog(id: string, updateData: BlogInputModel): Promise<boolean> {
         const result = await getBlogsCollection().updateOne(
             { id },
@@ -81,16 +79,9 @@ export const blogsRepository: IBlogsRepository = {
         );
         return result.matchedCount > 0;
     },
-
     async deleteBlogById(id: string): Promise<boolean> {
         const result = await getBlogsCollection().deleteOne({ id });
         return result.deletedCount > 0;
-    },
-    async getTotalBlogsCount(searchNameTerm: string | null): Promise<number> {
-        const filter = searchNameTerm
-            ? { name: { $regex: searchNameTerm, $options: 'i' } } // Поиск без учёта регистра
-            : {};
-
-        return await getBlogsCollection().countDocuments(filter);
     }
 };
+
