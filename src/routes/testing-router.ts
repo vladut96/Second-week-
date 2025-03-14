@@ -11,7 +11,7 @@ testingRouter.delete("/all-data", async (req: Request, res: Response) => {
 
                 await blogsCollection.deleteMany({});
                 await postsCollection.deleteMany({});
-                await usersCollection.deleteMany()
+                await usersCollection.deleteMany({});
                 res.sendStatus(204);
         } catch (error) {
                 console.error("Error deleting all data:", error);
