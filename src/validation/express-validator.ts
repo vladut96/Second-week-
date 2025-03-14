@@ -123,15 +123,19 @@ export const validateUserInput = [
     check('login')
         .trim()
         .notEmpty().withMessage('Login is required')
+        .bail()
         .isLength({ min: 3, max: 10 }).withMessage('Login must be between 3 and 10 characters')
+        .bail()
         .matches(/^[a-zA-Z0-9_-]*$/).withMessage('Login can only contain letters, numbers, underscores, and hyphens'),
     check('email')
         .trim()
         .notEmpty().withMessage('Email is required')
+        .bail()
         .matches(/^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$/).withMessage('Invalid email format'),
     check('password')
         .trim()
         .notEmpty().withMessage('Password is required')
+        .bail()
         .isLength({ min: 6, max: 20 }).withMessage('Password must be between 6 and 20 characters'),
 ];
 
