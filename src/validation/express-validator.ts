@@ -120,9 +120,19 @@ export const validateAuthInput = [
 ];
 
 export const validateUserInput = [
-    check('login').trim().notEmpty().withMessage('Login is required').isString().withMessage('Login must be a string'),
-    check('email').trim().isEmail().withMessage('Invalid email format'),
-    check('password').trim().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    check('login')
+        .trim()
+        .notEmpty().withMessage('Login is required')
+        .isLength({ min: 3, max: 10 }).withMessage('Login must be between 3 and 10 characters')
+        .matches(/^[a-zA-Z0-9_-]*$/).withMessage('Login can only contain letters, numbers, underscores, and hyphens'),
+    check('email')
+        .trim()
+        .notEmpty().withMessage('Email is required')
+        .matches(/^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$/).withMessage('Invalid email format'),
+    check('password')
+        .trim()
+        .notEmpty().withMessage('Password is required')
+        .isLength({ min: 6, max: 20 }).withMessage('Password must be between 6 and 20 characters'),
 ];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
