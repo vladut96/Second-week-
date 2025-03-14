@@ -18,6 +18,7 @@ interface IBlogsService {
     deleteBlogById(id: string): Promise<boolean>;
 }
 export function mapToBlogViewModel(blog: any): BlogViewModel {
+    console.log(blog, 'blog');
     return {
         id: blog.id,
         name: blog.name,

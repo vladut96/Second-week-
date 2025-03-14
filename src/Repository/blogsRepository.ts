@@ -35,14 +35,14 @@ export const blogsQueryRepository: IBlogsQueryRepository = {
             ? { name: { $regex: searchNameTerm, $options: 'i' } } // Case-insensitive search
             : {};
 
-        const blogs = await getBlogsCollection()
+        const blogs:any = await getBlogsCollection()
             .find(filter)
             .sort({ [sortBy]: sortDirection })
             .skip(skip)
             .limit(limit)
             .toArray();
 
-        return blogs.map(mapToBlogViewModel);
+        return blogs;
     },
 
     async getTotalBlogsCount(searchNameTerm: string | null): Promise<number> {
