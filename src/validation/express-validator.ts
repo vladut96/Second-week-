@@ -28,9 +28,17 @@ export const validatePostInput = [
         .isString().withMessage('Content must be a string')
         .bail()
         .trim()
-        .notEmpty().withMessage('Content cannot be empty') //
+        .notEmpty().withMessage('Content cannot be empty')
         .bail()
-        .isLength({ max: 1000 }).withMessage('Content must be ≤1000 characters')
+        .isLength({ max: 1000 }).withMessage('Content must be ≤1000 characters'),
+
+    check('blogId')
+        .exists()
+        .bail()
+        .isString()
+        .bail()
+        .trim()
+        .notEmpty().withMessage('BlogId is required')
 ];
 export const validateBlogInput = [
     check("name")
