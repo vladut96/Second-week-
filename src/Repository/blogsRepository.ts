@@ -64,16 +64,19 @@ export const blogsRepository: IBlogsRepository = {
             name,
             description,
             websiteUrl,
-            createdAt: new Date().toString(),
+            createdAt: new Date().toISOString(),
             isMembership: false
         };
-
 
         const result = await getBlogsCollection().insertOne(newBlog);
 
         return {
             id: result.insertedId.toString(),
-            ...newBlog
+            name: newBlog.name,
+            description: newBlog.description,
+            websiteUrl: newBlog.websiteUrl,
+            createdAt: newBlog.createdAt,
+            isMembership: newBlog.isMembership
         };
     },
     async updateBlog(id: string, updateData: BlogInputModel): Promise<boolean> {

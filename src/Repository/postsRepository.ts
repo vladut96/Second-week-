@@ -58,16 +58,17 @@ export const postsRepository: IPostsRepository = {
             title,
             shortDescription,
             content,
-            blogId,
+            blogId: new ObjectId(blogId),
             blogName: blog.name,
-            createdAt: new Date().toString(),
+            createdAt: new Date().toISOString(),
         };
 
         const result = await getPostsCollection().insertOne(newPost);
 
         return {
             id: result.insertedId.toString(),
-            ...newPost
+            ...newPost,
+            blogId: newPost.blogId.toString(),
         };
     },
 
