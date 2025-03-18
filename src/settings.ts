@@ -10,5 +10,6 @@ export const SETTINGS = {
         POSTS: '/posts',
         BLOGS: '/blogs',
         USERS: '/users',
+        COMMENTS: '/comments',
     },
     }

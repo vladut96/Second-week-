@@ -1,5 +1,5 @@
 import {NextFunction, Request, Response } from "express";
-import {check, ValidationError, validationResult} from "express-validator";
+import {body, check, ValidationError, validationResult} from "express-validator";
 import {blogsQueryRepository, blogsRepository} from "../Repository/blogsRepository";
 
 
@@ -110,15 +110,17 @@ export const validateAuthInput = [
     check('loginOrEmail')
         .trim()
         .notEmpty().withMessage('Login or email is required')
+        .bail()
         .isString().withMessage('Login or email must be a string'),
 
     check('password')
         .trim()
         .notEmpty().withMessage('Password is required')
+        .bail()
         .isString().withMessage('Password must be a string')
+        .bail()
         .isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
 ];
-
 export const validateUserInput = [
     check('login')
         .trim()
@@ -138,7 +140,12 @@ export const validateUserInput = [
         .bail()
         .isLength({ min: 6, max: 20 }).withMessage('Password must be between 6 and 20 characters'),
 ];
-
+export const validateComment = [
+    body("content")
+        .trim()
+        .isLength({ min: 20, max: 300 })
+        .withMessage("Content must be between 20 and 300 characters"),
+];
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

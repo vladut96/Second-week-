@@ -36,24 +36,46 @@ export interface BlogViewModel {
   createdAt: string;
   isMembership: boolean;
 }
-export type UserViewModel = {
+export interface UserViewModel  {
     id: string;
     login: string;
     email: string;
     createdAt: string;
 };
-export type UserInputModel = {
+export interface UserInputModel  {
     login: string;
     password: string;
     email: string;
 };
-export type UserAuthModel = {
+export interface UserAuthModel  {
     _id: ObjectId;
     login: string;
     email: string;
     passwordHash: string; //
 };
-export type Paginator<T> = {
+export interface CommentInputModel  {
+    content: string;
+}
+export interface CommentViewModel<T>  {
+    id: string;
+    content: string;
+    commentatorInfo: CommentatorInfo ;
+    createdAt: string;
+}
+export interface CommentatorInfo {
+    userId: string;
+    userLogin: string;
+}
+export interface LoginSuccessViewModel {
+    accessToken : string;
+}
+export interface MeViewModel {
+    email: string;
+    login: string;
+    userId: string;
+}
+
+export interface Paginator<T>  {
     pagesCount: number;
     page: number;
     pageSize: number;
