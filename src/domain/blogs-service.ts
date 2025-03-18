@@ -17,17 +17,6 @@ interface IBlogsService {
     updateBlog(id: string, updateData: BlogInputModel): Promise<boolean>;
     deleteBlogById(id: string): Promise<boolean>;
 }
-export function mapToBlogViewModel(blog: any): BlogViewModel {
-    console.log(blog, 'blog');
-    return {
-        id: blog.id,
-        name: blog.name,
-        description: blog.description,
-        websiteUrl: blog.websiteUrl,
-        createdAt: blog.createdAt.toISOString(),
-        isMembership: blog.isMembership || false
-    };
-}
 
 export const blogsQueryService: IBlogsQueryService = {
     async getBlogs({ searchNameTerm, sortBy, sortDirection, pageNumber, pageSize }) {
@@ -50,7 +39,7 @@ export const blogsQueryService: IBlogsQueryService = {
             page: pageNumber,
             pageSize,
             totalCount,
-            items: blogs.map(mapToBlogViewModel),
+            items: blogs,
         };
     },
     async getBlogById(id: string): Promise<BlogViewModel | null> {
