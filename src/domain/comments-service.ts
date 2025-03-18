@@ -30,8 +30,8 @@ export const commentsService = {
             return { success: false };
         }
 
-        if (comment.commentatorInfo.userId ) {
-            return { success: false, error: "You can only delete your own comment" };
+        if (comment.commentatorInfo.userId !== userId) {
+            return { success: false};
         }
 
         const deleted = await commentsRepository.deleteComment(commentId);
@@ -40,5 +40,34 @@ export const commentsService = {
         }
 
         return { success: true };
+    },async getCommentsByPostId({ postId, pageNumber, pageSize, sortBy,  sortDirection }: {
+        postId: string;
+        pageNumber: number;
+        pageSize: number;
+        sortBy: string;
+        sortDirection: 1 | -1;
+    }) {
+        return await commentsRepository.getCommentsByPostId({
+            postId,
+            pageNumber,
+            pageSize,
+            sortBy,
+            sortDirection
+        });
+    },
+
+    async createComment({ postId, content, userId, userLogin }: {
+        postId: string;
+        content: string;
+        userId: string;
+        userLogin: string;
+    }) {
+        return await commentsRepository.createComment({
+            postId,
+            content,
+            userId,
+            userLogin
+        });
     }
+
 };

@@ -56,7 +56,6 @@ export const postsRepository: IPostsRepository = {
             blogName: blog.name,
             createdAt: new Date()
         };
-
         await getPostsCollection().insertOne(newPost);
         return mapToViewModel(newPost);
     },

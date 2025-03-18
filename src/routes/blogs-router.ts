@@ -1,6 +1,6 @@
 import {Request, Response, Router} from "express";
 import {basicAuthMiddleware} from "../validation/basicAuthMiddleware";
-import {handleValidationErrors, validateBlogInput, validatePostInputWithoutId}from "../validation/express-validator";
+import { handleValidationErrors, validateBlogInput, validatePostInput} from "../validation/express-validator";
 import {Paginator, PostViewModel} from "../types/types"
 import {postsRepository} from "../Repository/postsRepository";
 import {blogsQueryService, blogsService} from "../domain/blogs-service";
@@ -82,7 +82,7 @@ blogsRouter.post('/', basicAuthMiddleware, validateBlogInput, handleValidationEr
             const newBlog = await blogsService.createBlog({ name, description, websiteUrl });
             return res.status(201).json(newBlog);
 });
-blogsRouter.post('/:blogId/posts', basicAuthMiddleware, validatePostInputWithoutId, handleValidationErrors, async (req: Request, res: Response) => {
+blogsRouter.post('/:blogId/posts', basicAuthMiddleware, validatePostInput, handleValidationErrors, async (req: Request, res: Response) => {
         const blogId = req.params.blogId;
         const { title, shortDescription, content } = req.body;
         const foundBlog = await blogsQueryService.getBlogById(blogId);

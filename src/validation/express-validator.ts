@@ -1,53 +1,7 @@
 import {NextFunction, Request, Response } from "express";
 import {body, check, ValidationError, validationResult} from "express-validator";
-import {blogsQueryRepository, blogsRepository} from "../Repository/blogsRepository";
-
 
 export const validatePostInput = [
-    check('title')
-        .exists().withMessage('Title is required')
-        .bail()
-        .isString().withMessage('Title must be a string')
-        .bail()
-        .trim()
-        .notEmpty().withMessage('Title cannot be empty')
-        .bail()
-        .isLength({ max: 30 }).withMessage('Title must be ≤30 characters'),
-
-    check('shortDescription')
-        .exists().withMessage('Short description is required')
-        .bail()
-        .isString().withMessage('Short description must be a string')
-        .bail()
-        .trim()
-        .notEmpty().withMessage('Short description cannot be empty')
-        .bail()
-        .isLength({ max: 100 }).withMessage('Short description must be ≤100 characters'),
-
-    check('content')
-        .exists().withMessage('Content is required')
-        .bail()
-        .isString().withMessage('Content must be a string')
-        .bail()
-        .trim()
-        .notEmpty().withMessage('Content cannot be empty') //
-        .bail()
-        .isLength({ max: 1000 }).withMessage('Content must be ≤1000 characters'),
-
-    check('blogId')
-        .exists().withMessage('Blog ID is required')
-        .bail()
-        .isString().withMessage('Blog ID must be a string')
-        .bail()
-        .custom(async (blogId) => {
-            const blog = await blogsQueryRepository.getBlogById(blogId);
-            if (!blog) {
-                throw new Error('Blog not found');
-            }
-            return true;
-        })
-];
-export const validatePostInputWithoutId = [
     check('title')
         .exists().withMessage('Title is required')
         .bail()
@@ -146,6 +100,7 @@ export const validateComment = [
         .isLength({ min: 20, max: 300 })
         .withMessage("Content must be between 20 and 300 characters"),
 ];
+
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

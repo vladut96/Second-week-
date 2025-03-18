@@ -1,5 +1,6 @@
 import {PostInputModel, PostViewModel} from "../types/types";
 import {postsQueryRepository, postsRepository} from "../Repository/postsRepository";
+import {blogsQueryRepository} from "../Repository/blogsRepository";
 
 interface IPostsQueryRepository {
     getPosts(params: {
@@ -37,19 +38,6 @@ interface IPostsRepository {
     deletePostById(postId: string): Promise<boolean>;
 }
 
-export const postsService: IPostsRepository = {
-    async createPost(postData) {
-        return await postsRepository.createPost(postData);
-    },
-
-    async updatePost(id: string, updateData: PostInputModel): Promise<boolean> {
-        return await postsRepository.updatePost(id, updateData);
-    },
-
-    async deletePostById(postId: string): Promise<boolean> {
-        return await postsRepository.deletePostById(postId);
-    },
-};
 export const postsQueryService: IPostsQueryRepository = {
     async getPosts({ sortBy, sortDirection, pageNumber, pageSize }) {
         return await postsQueryRepository.getPosts({ sortBy, sortDirection, pageNumber, pageSize });
@@ -65,5 +53,22 @@ export const postsQueryService: IPostsQueryRepository = {
 
     async getTotalPostsCountByBlogId(blogId: string) {
         return await postsQueryRepository.getTotalPostsCountByBlogId(blogId);
+    },
+};
+export const postsService: IPostsRepository = {
+    async createPost(postData) {
+        const { title, shortDescription, content, blogId } = postData;
+
+        const blog = await blogsQueryRepository.getBlogById(blogId);
+        if (!blog) {
+            throw new Error('Blog not found');
+        }
+        return await postsRepository.createPost({ title, shortDescription, content, blogId });
+    },
+    async updatePost(id: string, updateData: PostInputModel): Promise<boolean> {
+        return await postsRepository.updatePost(id, updateData);
+    },
+    async deletePostById(postId: string): Promise<boolean> {
+        return await postsRepository.deletePostById(postId);
     },
 };
