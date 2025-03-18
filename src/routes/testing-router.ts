@@ -1,6 +1,5 @@
 import { Request, Response, Router } from "express";
 import {getBlogsCollection, getCommentsCollection, getPostsCollection, getUsersCollection} from "../db/mongoDB";
-import {commentsRouter} from "./comments-router";
 
 export const testingRouter = Router();
 
