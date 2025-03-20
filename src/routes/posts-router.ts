@@ -63,11 +63,18 @@ postsRouter.get('/:id', async (req: Request , res: Response) => {
     }
     return res.status(200).json(foundPost);
 });
-postsRouter.post('/:id', basicAuthMiddleware, validatePostInput, handleValidationErrors, async (req: Request, res: Response) => {
-    const { title, shortDescription, content, blogId } = req.body;
-    const newPost = await postsService.createPost(
-        { title, shortDescription, content, blogId });
+postsRouter.post('/', basicAuthMiddleware, validatePostInput, handleValidationErrors, async (req: Request, res: Response) => {
+    try {
+        const { title, shortDescription, content, blogId } = req.body;
+        const newPost = await postsService.createPost({ title, shortDescription, content, blogId });
         return res.status(201).json(newPost);
+    } catch (error) {
+        const err = error as Error; // Type assertion
+        if (err.message === 'Blog not found') {
+            return res.status(404).json({ message: 'Blog not found' });
+        }
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
 });
 postsRouter.put('/:id', basicAuthMiddleware, validatePostInput, handleValidationErrors, async (req: Request, res: Response) => {
         const { id } = req.params;

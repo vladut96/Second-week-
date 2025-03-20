@@ -19,8 +19,6 @@ export const usersRepository = {
             }
         }
 
-        console.log('📌 MongoDB Filter:', JSON.stringify(filter)); // ✅ Для отладки
-
         // ✅ Подсчёт количества записей для пагинации
         const totalCount = await getUsersCollection().countDocuments(filter);
 

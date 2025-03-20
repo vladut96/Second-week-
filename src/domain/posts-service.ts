@@ -1,42 +1,6 @@
-import {PostInputModel, PostViewModel} from "../types/types";
+import {PostInputModel, IPostsQueryRepository, IPostsRepository} from "../types/types";
 import {postsQueryRepository, postsRepository} from "../Repository/postsRepository";
 import {blogsQueryRepository} from "../Repository/blogsRepository";
-
-interface IPostsQueryRepository {
-    getPosts(params: {
-        sortBy: string;
-        sortDirection: 1 | -1;
-        pageNumber: number;
-        pageSize: number;
-    }): Promise<{
-        pagesCount: number;
-        page: number;
-        pageSize: number;
-        totalCount: number;
-        items: PostViewModel[];
-    }>;
-    getPostById(postId: string): Promise<PostViewModel | null>;
-    getPostsByBlogId(
-        blogId: string,
-        sortBy: string,
-        sortDirection: 1 | -1,
-        skip: number,
-        limit: number
-    ): Promise<PostViewModel[]>;
-    getTotalPostsCountByBlogId(blogId: string): Promise<number>;
-}
-interface IPostsRepository {
-    createPost(postData: {
-        title: string;
-        shortDescription: string;
-        content: string;
-        blogId: string;
-    }): Promise<PostViewModel>;
-
-    updatePost(id: string, updateData: PostInputModel): Promise<boolean>;
-
-    deletePostById(postId: string): Promise<boolean>;
-}
 
 export const postsQueryService: IPostsQueryRepository = {
     async getPosts({ sortBy, sortDirection, pageNumber, pageSize }) {
@@ -63,7 +27,9 @@ export const postsService: IPostsRepository = {
         if (!blog) {
             throw new Error('Blog not found');
         }
-        return await postsRepository.createPost({ title, shortDescription, content, blogId });
+        const blogName:string = blog.name;
+                                                                                            //@ts-ignore
+        return await postsRepository.createPost({ title, shortDescription, content, blogId, blogName });
     },
     async updatePost(id: string, updateData: PostInputModel): Promise<boolean> {
         return await postsRepository.updatePost(id, updateData);

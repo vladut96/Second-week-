@@ -1,5 +1,5 @@
-import { PostInputModel, PostViewModel} from "../types/types";
-import { getBlogsCollection, getPostsCollection } from "../db/mongoDB";
+import {IPostsQueryRepository, PostData, PostInputModel, PostViewModel} from "../types/types";
+import { getPostsCollection } from "../db/mongoDB";
 import {ObjectId} from "mongodb";
 
 const mapToViewModel = (post: any): PostViewModel => {
@@ -8,9 +8,9 @@ const mapToViewModel = (post: any): PostViewModel => {
         title: post.title,
         shortDescription: post.shortDescription,
         content: post.content,
-        blogId: post.blogId.toString(), // ✅ Ensure `blogId` is a string
+        blogId: post.blogId,
         blogName: post.blogName,
-        createdAt: post.createdAt.toISOString(),
+        createdAt: post.createdAt,
     };
 };
 interface IPostsRepository {
@@ -25,51 +25,22 @@ interface IPostsRepository {
 
     deletePostById(id: string): Promise<boolean>;
 }
-interface IPostsQueryRepository {
-    getPosts(params: {
-        sortBy: string;
-        sortDirection: 1 | -1;
-        pageNumber: number;
-        pageSize: number;
-    }): Promise<{
-        pagesCount: number;
-        page: number;
-        pageSize: number;
-        totalCount: number;
-        items: PostViewModel[];
-    }>;
-    getPostById(postId: string): Promise<PostViewModel | null>;
-    getPostsByBlogId(
-        blogId: string,
-        sortBy: string,
-        sortDirection: 1 | -1,
-        skip: number,
-        limit: number
-    ): Promise<PostViewModel[]>;
-    getTotalPostsCountByBlogId(blogId: string): Promise<number>;}
-
 
 export const postsRepository: IPostsRepository = {
-    async createPost({ title, shortDescription, content, blogId }) {
-        const blog = await getBlogsCollection().findOne({ _id: new ObjectId(blogId) });
-        if (!blog) throw new Error("Not found");
+    async createPost(postData: PostData): Promise<PostViewModel> {
+        const { title, shortDescription, content, blogId, blogName } = postData;
 
         const newPost = {
             title,
             shortDescription,
             content,
-            blogId: new ObjectId(blogId),
-            blogName: blog.name,
-            createdAt: new Date().toISOString(),
+            blogId: blogId,
+            blogName: blogName!,
+            createdAt: new Date().toString(),
         };
 
         const result = await getPostsCollection().insertOne(newPost);
-
-        return {
-            id: result.insertedId.toString(),
-            ...newPost,
-            blogId: newPost.blogId.toString(),
-        };
+        return mapToViewModel({ ...newPost, _id: result.insertedId });
     },
 
     async updatePost(id: string, updateData: PostInputModel): Promise<boolean> {

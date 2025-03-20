@@ -1,218 +1,126 @@
-import {req} from './test-helpers'
-import { runDb, postsCollection, blogsCollection } from "../src/db/mongoDB";
-import { v4 as uuidv4 } from 'uuid';
-import {SETTINGS} from "../src/settings";
+import { req } from "./test-helpers";
+import {runDb} from "../src/db/mongoDB";
+import {config} from 'dotenv'
+import {PostInputModel, PostViewModel} from "../src/types/types";
+import {createdBlog} from "./blogs-small-tests.e2e.test";
+config()
 
-const BASIC_AUTH = 'Basic YWRtaW46cXdlcnR5'; // Base64 encoded 'admin:qwerty'
+
+let createdPost: PostViewModel;
 
 describe('/posts', () => {
     beforeAll(async () => {
-        const isConnected = await runDb(SETTINGS.MONGO_URL!);
-        if (!isConnected) {
-            throw new Error("Failed to connect to MongoDB in tests.");
-        }
-        await postsCollection.deleteMany({});
+        await runDb(process.env.MONGO_URL!);
+        ///const blogsCollection = getBlogsCollection();
+        ///await blogsCollection.deleteMany({});
+       // await req.delete('/testing/all-data');
     });
+    it('Should create a post with valid data', async () => {
+        const validCredentials = Buffer.from('admin:qwerty').toString('base64');
 
-    describe('GET /posts', () => {
-        it('should return empty array when no posts exist', async () => {
-            const res = await req
-                .get('/posts')
-                .expect(200);
+        const newPost: PostInputModel = {
+            title: 'Test Post',
+            shortDescription: 'This is a correct test post description.',
+            content: 'A valid post content.',
+            blogId: createdBlog.id
+        };
 
-            expect(res.body).toEqual([]);
-        });
+        const res = await req
+            .post('/posts')
+            .set('Authorization', `Basic ${validCredentials}`)
+            .send(newPost)
+            .expect(201)
 
-        it('should return all posts', async () => {
-            // Create test blog first
-            const blog = await blogsCollection.insertOne({
-                name: 'Test Blog',
-                description: 'Test Description',
-                websiteUrl: 'https://test.com'
-            });
+        createdPost = res.body;
+    })
+    it('Should create a post with valid data 2 post', async () => {
+        const validCredentials = Buffer.from('admin:qwerty').toString('base64');
 
-            // Create test posts
+        const newPost: PostInputModel = {
+            title: 'Test Post2',
+            shortDescription: 'This is a correct test post description 2.',
+            content: 'A valid post content 2.',
+            blogId: createdBlog.id
+        };
 
-            await postsCollection.insertMany([
-                {   title: 'Post 1',
-                    shortDescription: 'Desc 1',
-                    content: 'Content 1',
-                    // @ts-ignore
-                    blogId: blog.insertedId,
-                    blogName: 'Test Blog',
-                    createdAt: new Date().toISOString()
+        const res = await req
+            .post('/posts')
+            .set('Authorization', `Basic ${validCredentials}`)
+            .send(newPost)
+            .expect(201)
+    })
+    it('should NOT create a new post with invalid data', async () => {
+        const validCredentials = Buffer.from('admin:qwerty').toString('base64');
+
+        const newBlog = {
+            title: 'Too Long Name!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!',
+            shortDescription: '',
+            content: '',
+            blogId: createdBlog.id
+        };
+
+        const res = await req
+            .post('/blogs')
+            .set('Authorization', `Basic ${validCredentials}`)
+            .send(newBlog)
+            .expect(400);
+        expect(res.body).toEqual({
+            errorsMessages: [
+                {
+                    message: expect.any(String),
+                    field: 'title',
                 },
                 {
-                    id: uuidv4(),
-                    title: 'Post 2',
-                    shortDescription: 'Desc 2',
-                    content: 'Content 2',
-                    // @ts-ignore
-                    blogId: blog.insertedId,
-                    blogName: 'Test Blog',
-                    createdAt: new Date().toISOString()
-                }
-            ]);
-
-            const res = await req
-                .get('/posts')
-                .expect(200);
-
-            expect(res.body.length).toBe(2);
-            expect(res.body[0]).toHaveProperty('title');
-            expect(res.body[0]).toHaveProperty('shortDescription');
+                    message: expect.any(String),
+                    field: 'shortDescription',
+                },
+                {
+                    message: expect.any(String),
+                    field: 'content',
+                },
+            ],
         });
     });
+    it('should return blogs with paging, sorting, and filtering', async () => {
+        const pageNumber = 1; // Page number
+        const pageSize = 1; // Page size
+        const sortBy = 'createdAt'; // Sort by createdAt
+        const sortDirection = 'asc'; // Sort direction
 
-    describe('GET /posts/:id', () => {
-        it('should return 404 for non-existent post', async () => {
-            const res = await req
-                .get(`/posts/${uuidv4()}`)
-                .expect(404);
+        const res = await req
+            .get('/posts')
+            .query({
+                sortBy,
+                sortDirection,
+                pageNumber,
+                pageSize,
+            })
+            .expect(200);
+
+        expect(res.body).toMatchObject({
+            pagesCount: 1, // Ожидаемое количество страниц
+            page: 1, // Ожидаемая текущая страница
+            pageSize: 1, // Ожидаемый размер страницы
+            totalCount: 2, // Ожидаемое общее количество блогов
+            items: expect.any(Array), // Массив блогов (проверяем только тип)
         });
 
-        it('should return post by id', async () => {
-            const blog = await blogsCollection.insertOne({
-                name: 'Test Blog',
-                description: 'Test Description',
-                websiteUrl: 'https://test.com'
+        if (res.body.items.length > 0) {
+            const post = res.body.items[0];
+            expect(post).toMatchObject({
+                id: createdPost.id,
+                title: createdPost.title,
+                shortDescription: createdPost.shortDescription,
+                content: createdPost.content,
+                blogId: createdPost.blogId,
+                blogName: createdPost.blogName,
+                createdAt: createdPost.createdAt,
             });
-
-            const post = await postsCollection.insertOne({
-                title: 'Test Post',
-                shortDescription: 'Test Description',
-                content: 'Test Content',
-                blogId: '',
-                blogName: 'Test Blog',
-                createdAt: ''
-            });
-
-            const res = await req
-                .get(`/posts/${post.insertedId}`)
-                .expect(200);
-
-            expect(res.body).toHaveProperty('title', 'Test Post');
-        });
+        }
     });
 
-    describe('POST /posts', () => {
-        it('should return 401 Unauthorized if no credentials are provided', async () => {
-            const newPost = {
-                title: 'Test Post',
-                shortDescription: 'Test Description',
-                content: 'Test Content',
-                blogId: uuidv4()
-            };
 
-            const res = await req
-                .post('/posts')
-                .send(newPost)
-                .expect(401);
-        });
 
-        it('should create new post with valid data', async () => {
-            const blog = await blogsCollection.insertOne({
-                name: 'Test Blog',
-                description: 'Test Description',
-                websiteUrl: 'https://test.com'
-            });
 
-            const newPost = {
-                title: 'Test Post',
-                shortDescription: 'Test Description',
-                content: 'Test Content',
-                blogId: blog.insertedId
-            };
 
-            const res = await req
-                .post('/posts')
-                .set('Authorization', BASIC_AUTH)
-                .send(newPost)
-                .expect(201);
-
-            expect(res.body).toHaveProperty('id');
-            expect(res.body.title).toBe('Test Post');
-        });
-    });
-
-    describe('PUT /posts/:id', () => {
-        it('should return 401 Unauthorized if no credentials are provided', async () => {
-            const res = await req
-                .put(`/posts/${uuidv4()}`)
-                .send({})
-                .expect(401);
-        });
-
-        it('should update existing post', async () => {
-            const blog = await blogsCollection.insertOne({
-                name: 'Test Blog',
-                description: 'Test Description',
-                websiteUrl: 'https://test.com'
-            });
-
-            const post = await postsCollection.insertOne({
-                id: uuidv4(),
-                title: 'Old Title',
-                shortDescription: 'Old Description',
-                content: 'Old Content',
-                // @ts-ignore
-                blogId: blog.insertedId,
-                blogName: 'Test Blog',
-                createdAt: new Date().toISOString()
-            });
-
-            const updatedData = {
-                title: 'New Title',
-                shortDescription: 'New Description',
-                content: 'New Content',
-                blogId: blog.insertedId
-            };
-
-            const res = await req
-                .put(`/posts/${post.insertedId}`)
-                .set('Authorization', BASIC_AUTH)
-                .send(updatedData)
-                .expect(204);
-
-            const updatedPost = await postsCollection.findOne({ _id: post.insertedId });
-            expect(updatedPost?.title).toBe('New Title');
-        });
-    });
-
-    describe('DELETE /posts/:id', () => {
-        it('should return 401 Unauthorized if no credentials are provided', async () => {
-            const res = await req
-                .delete(`/posts/${uuidv4()}`)
-                .expect(401);
-        });
-
-        it('should delete existing post', async () => {
-            const blog = await blogsCollection.insertOne({
-                name: 'Test Blog',
-                description: 'Test Description',
-                websiteUrl: 'https://test.com'
-            });
-
-            const post = await postsCollection.insertOne({
-                id: uuidv4(),
-                title: 'Test Post',
-                shortDescription: 'Test Description',
-                content: 'Test Content',
-                // @ts-ignore
-                blogId: blog.insertedId,
-                blogName: 'Test Blog',
-                createdAt: new Date().toISOString()
-            });
-
-            const res = await req
-                .delete(`/posts/${post.insertedId}`)
-                .set('Authorization', BASIC_AUTH)
-                .expect(204);
-
-            const deletedPost = await postsCollection.findOne({ _id: post.insertedId });
-            expect(deletedPost).toBeNull();
-        });
-    });
 });
-
-

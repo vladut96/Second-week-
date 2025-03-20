@@ -23,6 +23,13 @@ export interface PostViewModel {
     blogName: string;
     createdAt: string;
 }
+export interface PostData {
+    title: string;
+    shortDescription: string;
+    content: string;
+    blogId: string;
+    blogName?: string; // Optional if not always required
+}
 export interface BlogInputModel {
     name: string;
     description: string;
@@ -41,18 +48,18 @@ export interface UserViewModel  {
     login: string;
     email: string;
     createdAt: string;
-};
+}
 export interface UserInputModel  {
     login: string;
     password: string;
     email: string;
-};
+}
 export interface UserAuthModel  {
     _id: ObjectId;
     login: string;
     email: string;
     passwordHash: string; //
-};
+}
 export interface CommentInputModel  {
     content: string;
 }
@@ -81,8 +88,32 @@ export interface Paginator<T>  {
     pageSize: number;
     totalCount: number;
     items: T[];
-};
+}
 
+export interface IPostsQueryRepository {
+    getPosts(params: {
+        sortBy: string;
+        sortDirection: 1 | -1;
+        pageNumber: number;
+        pageSize: number;
+    }): Promise<Paginator<PostViewModel>>;
 
+    getPostById(postId: string): Promise<PostViewModel | null>;
+
+    getPostsByBlogId(
+        blogId: string,
+        sortBy: string,
+        sortDirection: 1 | -1,
+        skip: number,
+        limit: number
+    ): Promise<PostViewModel[]>;
+
+    getTotalPostsCountByBlogId(blogId: string): Promise<number>;
+}
+export interface IPostsRepository {
+    createPost(postData: PostData): Promise<PostViewModel>;
+    updatePost(id: string, updateData: PostInputModel): Promise<boolean>;
+    deletePostById(postId: string): Promise<boolean>;
+}
 
 
