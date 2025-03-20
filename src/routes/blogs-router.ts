@@ -83,20 +83,24 @@ blogsRouter.post('/', basicAuthMiddleware, validateBlogInput, handleValidationEr
             return res.status(201).json(newBlog);
 });
 blogsRouter.post('/:blogId/posts', basicAuthMiddleware, validatePostInput, handleValidationErrors, async (req: Request, res: Response) => {
-        const blogId = req.params.blogId;
-        const { title, shortDescription, content } = req.body;
-        const foundBlog = await blogsQueryService.getBlogById(blogId);
-        if (!foundBlog) {
-            return res.status(404).json({ message: 'Blog not found' });
-        }
-        const newPost = await postsRepository.createPost({
-            title,
-            shortDescription,
-            content,
-            blogId,
-        });
-        return res.status(201).json(newPost);
+    const blogId = req.params.blogId;
+    const { title, shortDescription, content } = req.body;
+
+    const foundBlog = await blogsQueryService.getBlogById(blogId);
+    if (!foundBlog) {
+        return res.status(404).json({ message: 'Blog not found' });
+    }
+
+    const newPost = await postsRepository.createPost({
+        title,
+        shortDescription,
+        content,
+        blogId,
+        blogName: foundBlog.name,
     });
+
+    return res.status(201).json(newPost);
+});
 blogsRouter.put('/:id', basicAuthMiddleware, validateBlogInput, handleValidationErrors, async (req: Request, res: Response) => {
             const { id } = req.params;
             const { name, description, websiteUrl } = req.body;

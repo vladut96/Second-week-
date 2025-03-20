@@ -22,9 +22,9 @@ export const postsRepository = {
             title,
             shortDescription,
             content,
-            blogId: blogId,
-            blogName: blogName!,
-            createdAt: new Date().toISOString(), // ✅ ISO format
+            blogId,
+            blogName,
+            createdAt: new Date().toISOString(),
         };
 
         const result = await getPostsCollection().insertOne(newPost);
