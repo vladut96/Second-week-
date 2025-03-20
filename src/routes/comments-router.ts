@@ -1,6 +1,5 @@
 import { Router, Request, Response } from "express";
 import { commentsService } from "../domain/comments-service";
-import { basicAuthMiddleware } from "../validation/basicAuthMiddleware"
 import {validateComment, handleValidationErrors, validateAuthInput} from "../validation/express-validator";
 import {authenticateToken} from "../validation/authTokenMiddleware";
 
@@ -15,7 +14,7 @@ commentsRouter.get("/:commentId", async (req: Request, res: Response) => {
 
     return res.status(200).json(comment);
 });
-commentsRouter.put("/:commentId", authenticateToken, basicAuthMiddleware, validateComment, handleValidationErrors, async (req: Request, res: Response) => {
+commentsRouter.put("/:commentId", authenticateToken, validateComment, handleValidationErrors, async (req: Request, res: Response) => {
     const { commentId } = req.params;
     const { content } = req.body;
     const userId = req.user!.userId;
@@ -29,7 +28,7 @@ commentsRouter.put("/:commentId", authenticateToken, basicAuthMiddleware, valida
 
     return res.sendStatus(204);
 });
-commentsRouter.delete("/:commentId", authenticateToken, basicAuthMiddleware, async (req: Request, res: Response) => {
+commentsRouter.delete("/:commentId", authenticateToken, async (req: Request, res: Response) => {
     const { commentId } = req.params;
     const userId = req.user!.userId;
 

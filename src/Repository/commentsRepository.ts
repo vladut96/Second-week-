@@ -76,7 +76,7 @@ export const commentsRepository = {
                 userId,
                 userLogin
             },
-            createdAt: new Date().toString()
+            createdAt: new Date().toISOString()
         };
         const result = await getCommentsCollection().insertOne(newComment);
         return {
