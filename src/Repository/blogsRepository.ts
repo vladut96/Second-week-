@@ -12,24 +12,21 @@ export function mapToBlogViewModel(blog: any): BlogViewModel {
         isMembership: blog.isMembership || false
     };
 }
-interface IBlogsQueryRepository {
-    getBlogs(params: {
+
+export const blogsQueryRepository = {
+    async getBlogs({
+                       searchNameTerm,
+                       sortBy,
+                       sortDirection,
+                       skip,
+                       limit
+                   }: {
         searchNameTerm: string | null;
         sortBy: string;
         sortDirection: 1 | -1;
         skip: number;
         limit: number;
-    }): Promise<BlogViewModel[]>;
-    getBlogById(id: string): Promise<BlogViewModel | null>;
-    getTotalBlogsCount(searchNameTerm: string | null): Promise<number>;
-}
-interface IBlogsRepository {
-    createBlog(blogData: BlogInputModel): Promise<BlogViewModel>;
-    updateBlog(id: string, updateData: BlogInputModel): Promise<boolean>;
-    deleteBlogById(id: string): Promise<boolean>;
-}
-export const blogsQueryRepository: IBlogsQueryRepository = {
-    async getBlogs({ searchNameTerm, sortBy, sortDirection, skip, limit }) {
+    }): Promise<BlogViewModel[]> {
         const filter = searchNameTerm
             ? { name: { $regex: searchNameTerm, $options: "i" } }
             : {};
@@ -58,8 +55,8 @@ export const blogsQueryRepository: IBlogsQueryRepository = {
     }
 };
 
-export const blogsRepository: IBlogsRepository = {
-    async createBlog({ name, description, websiteUrl }): Promise<BlogViewModel> {
+export const blogsRepository = {
+    async createBlog({ name, description, websiteUrl }: BlogInputModel): Promise<BlogViewModel> {
         const newBlog = {
             name,
             description,
@@ -81,7 +78,7 @@ export const blogsRepository: IBlogsRepository = {
     },
     async updateBlog(id: string, updateData: BlogInputModel): Promise<boolean> {
         const result = await getBlogsCollection().updateOne(
-            { _id: new ObjectId(id)  },
+            { _id: new ObjectId(id) },
             { $set: updateData }
         );
         return result.matchedCount > 0;
@@ -91,4 +88,3 @@ export const blogsRepository: IBlogsRepository = {
         return result.deletedCount > 0;
     }
 };
-

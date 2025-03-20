@@ -90,30 +90,5 @@ export interface Paginator<T>  {
     items: T[];
 }
 
-export interface IPostsQueryRepository {
-    getPosts(params: {
-        sortBy: string;
-        sortDirection: 1 | -1;
-        pageNumber: number;
-        pageSize: number;
-    }): Promise<Paginator<PostViewModel>>;
-
-    getPostById(postId: string): Promise<PostViewModel | null>;
-
-    getPostsByBlogId(
-        blogId: string,
-        sortBy: string,
-        sortDirection: 1 | -1,
-        skip: number,
-        limit: number
-    ): Promise<PostViewModel[]>;
-
-    getTotalPostsCountByBlogId(blogId: string): Promise<number>;
-}
-export interface IPostsRepository {
-    createPost(postData: PostData): Promise<PostViewModel>;
-    updatePost(id: string, updateData: PostInputModel): Promise<boolean>;
-    deletePostById(postId: string): Promise<boolean>;
-}
 
 

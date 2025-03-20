@@ -1,6 +1,6 @@
-import {IPostsQueryRepository, PostData, PostInputModel, PostViewModel} from "../types/types";
+import { PostData, PostInputModel, PostViewModel, Paginator } from "../types/types";
 import { getPostsCollection } from "../db/mongoDB";
-import {ObjectId} from "mongodb";
+import { ObjectId } from "mongodb";
 
 const mapToViewModel = (post: any): PostViewModel => {
     return {
@@ -13,20 +13,8 @@ const mapToViewModel = (post: any): PostViewModel => {
         createdAt: post.createdAt,
     };
 };
-interface IPostsRepository {
-    createPost(data: {
-        title: string;
-        shortDescription: string;
-        content: string;
-        blogId: string;
-    }): Promise<PostViewModel>;
 
-    updatePost(id: string, data: PostInputModel): Promise<boolean>;
-
-    deletePostById(id: string): Promise<boolean>;
-}
-
-export const postsRepository: IPostsRepository = {
+export const postsRepository = {
     async createPost(postData: PostData): Promise<PostViewModel> {
         const { title, shortDescription, content, blogId, blogName } = postData;
 
@@ -36,7 +24,7 @@ export const postsRepository: IPostsRepository = {
             content,
             blogId: blogId,
             blogName: blogName!,
-            createdAt: new Date().toString(),
+            createdAt: new Date().toISOString(), // ✅ ISO format
         };
 
         const result = await getPostsCollection().insertOne(newPost);
@@ -56,8 +44,19 @@ export const postsRepository: IPostsRepository = {
         return result.deletedCount > 0;
     },
 };
-export const postsQueryRepository: IPostsQueryRepository = {
-    async getPosts({ sortBy, sortDirection, pageNumber, pageSize }) {
+
+export const postsQueryRepository = {
+    async getPosts({
+                       sortBy,
+                       sortDirection,
+                       pageNumber,
+                       pageSize
+                   }: {
+        sortBy: string;
+        sortDirection: 1 | -1;
+        pageNumber: number;
+        pageSize: number;
+    }): Promise<Paginator<PostViewModel>> {
         const skip = (pageNumber - 1) * pageSize;
         const limit = pageSize;
 
@@ -79,14 +78,20 @@ export const postsQueryRepository: IPostsQueryRepository = {
         };
     },
 
-    async getPostById(postId: string) {
+    async getPostById(postId: string): Promise<PostViewModel | null> {
         const post = await getPostsCollection().findOne({ _id: new ObjectId(postId) });
         return post ? mapToViewModel(post) : null;
     },
 
-    async getPostsByBlogId(blogId: string, sortBy: string, sortDirection: 1 | -1, skip: number, limit: number) {
+    async getPostsByBlogId(
+        blogId: string,
+        sortBy: string,
+        sortDirection: 1 | -1,
+        skip: number,
+        limit: number
+    ): Promise<PostViewModel[]> {
         const posts = await getPostsCollection()
-            .find({ _id: new ObjectId(blogId) })
+            .find({ blogId })
             .sort({ [sortBy]: sortDirection })
             .skip(skip)
             .limit(limit)
@@ -95,7 +100,7 @@ export const postsQueryRepository: IPostsQueryRepository = {
         return posts.map(mapToViewModel);
     },
 
-    async getTotalPostsCountByBlogId(blogId: string) {
-        return await getPostsCollection().countDocuments({ _id: new ObjectId(blogId) });
+    async getTotalPostsCountByBlogId(blogId: string): Promise<number> {
+        return await getPostsCollection().countDocuments({ blogId });
     },
 };
