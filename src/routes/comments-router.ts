@@ -22,8 +22,8 @@ commentsRouter.put("/:commentId", authenticateToken, validateComment, handleVali
     const result = await commentsService.updateComment(commentId, content, userId);
 
     if (!result.success) {
-        if (result.error) return res.sendStatus(404);
-        if (result.error) return res.sendStatus(403);
+        if (result.error === "Comment not found") return res.sendStatus(404);
+        if (result.error === "Access denied") return res.sendStatus(403);
     }
 
     return res.sendStatus(204);
@@ -35,8 +35,8 @@ commentsRouter.delete("/:commentId", authenticateToken, async (req: Request, res
     const result = await commentsService.deleteComment(commentId, userId);
 
     if (!result.success) {
-        if (result.error) return res.sendStatus(404);
-        if (result.error) return res.sendStatus(403);
+        if (result.error === "Comment not found") return res.sendStatus(404);
+        if (result.error === "Access denied") return res.sendStatus(403);
     }
     return res.sendStatus(204);
 });

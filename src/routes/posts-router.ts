@@ -6,7 +6,7 @@ import {commentsService} from "../domain/comments-service";
 import {authenticateToken} from "../validation/authTokenMiddleware";
 export const postsRouter = Router();
 
-postsRouter.get("/:postId/comments",authenticateToken, async (req, res) => {
+postsRouter.get("/:postId/comments", async (req, res) => {
     const { postId } = req.params;
     const pageNumber = parseInt(req.query.pageNumber as string, 10) || 1;
     const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
