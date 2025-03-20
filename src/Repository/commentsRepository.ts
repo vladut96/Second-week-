@@ -37,7 +37,7 @@ export const commentsRepository = {
         sortBy: string;
         sortDirection: 1 | -1;
     }) {
-        const filter = { postId };
+        const filter = { id: postId };
         const totalCount = await getCommentsCollection().countDocuments(filter);
 
         const comments = await getCommentsCollection()
