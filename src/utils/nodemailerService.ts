@@ -1,7 +1,6 @@
 import nodemailer from 'nodemailer';
 import { SentMessageInfo } from 'nodemailer';
 
-// Configuration interface
 interface EmailConfig {
     service: string;
     host: string;
