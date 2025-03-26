@@ -1,6 +1,13 @@
 import { MongoClient, Db, Collection } from 'mongodb';
 import * as dotenv from 'dotenv';
-import {BlogInputModel, CommentatorInfo, CommentViewModel, PostInputModel, UserViewModel} from "../types/types";
+import {
+    BlogInputModel,
+    CommentatorInfo,
+    CommentViewModel, EmailConfirmation,
+    PostInputModel,
+    RegisterUserDB,
+    UserViewModel
+} from "../types/types";
 
 dotenv.config();
 
@@ -37,7 +44,7 @@ export function getBlogsCollection(): Collection<BlogInputModel> {
 export function getPostsCollection(): Collection<PostInputModel> {
     return getDb().collection('Posts');
 }
-export function getUsersCollection(): Collection<UserViewModel> {
+export function getUsersCollection(): Collection<RegisterUserDB<EmailConfirmation>> {
     return getDb().collection('Users');
 }
 export function getCommentsCollection(): Collection<CommentViewModel<CommentatorInfo>> {

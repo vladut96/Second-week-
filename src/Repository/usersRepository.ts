@@ -1,6 +1,6 @@
 import { getUsersCollection } from '../db/mongoDB';
 import { ObjectId } from 'mongodb';
-import {Paginator, UserViewModel} from '../types/types';
+import { Paginator, RegisterUserDB, UserViewModel} from '../types/types';
 
 export const usersRepository = {
     async getUsers({ searchLoginTerm, searchEmailTerm, sortBy, sortDirection, pageNumber, pageSize }:
@@ -35,7 +35,7 @@ export const usersRepository = {
             page: pageNumber,
             pageSize,
             totalCount,
-            items: users.map(user => ({
+            items: users.map((user: any): UserViewModel => ({
                 id: user._id.toString(),
                 login: user.login,
                 email: user.email,
@@ -45,18 +45,27 @@ export const usersRepository = {
     },
 
     async getUserByLoginOrEmail(login: string, email: string): Promise<UserViewModel | null> {
-        return await getUsersCollection().findOne({ $or: [{ login }, { email }] });
+        const user: any = await getUsersCollection().findOne({ $or: [{ login }, { email }] });
+
+        if (!user) return null;
+
+        return {
+            id: user._id.toString(),
+            login: user.login,
+            email: user.email,
+            createdAt: user.createdAt // Convert Date to string if needed
+        };
     },
 
-    async createUser(user: { login: string; email: string; passwordHash: string }): Promise<UserViewModel> {
+    async createUser(user: RegisterUserDB<any>): Promise<UserViewModel> {
+
         const newUser = {
             login: user.login,
             email: user.email,
-            passwordHash: user.passwordHash, // ✅ Now passwordHash exists in this object
+            passwordHash: user.passwordHash,
             createdAt: new Date().toISOString(),
+            emailConfirmation: user.emailConfirmation
         };
-
-        // @ts-ignore
         const result = await getUsersCollection().insertOne(newUser);
         return {
             id: result.insertedId.toString(),

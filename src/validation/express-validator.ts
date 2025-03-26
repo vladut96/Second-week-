@@ -108,6 +108,24 @@ export const validateComment = [
         .isLength({ min: 20, max: 300 })
         .withMessage("Content must be between 20 and 300 characters"),
 ];
+export const validateRegistrationCode = [
+    check("code")
+        .trim()
+        .notEmpty().withMessage('Registration code is required')
+        .bail()
+        .isString().withMessage('Registration code must be a string'),
+];
+export const registrationEmailResendingValidator = [
+    body('email')
+        .notEmpty().withMessage('Email is required')
+        .bail()
+        .isEmail().withMessage('Must be a valid email')
+        .bail()
+        .matches(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)
+        .bail()
+        .withMessage('Email format is invalid'),
+];
+
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);

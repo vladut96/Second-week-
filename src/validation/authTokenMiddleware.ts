@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+dotenv.config();
 
 interface JwtPayload {
     userId: string;
@@ -7,7 +9,7 @@ interface JwtPayload {
     login: string;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'; // Используем переменные окружения
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
@@ -36,7 +38,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
             userId: payload.userId,
         };
 
-        next(); // Передаем управление следующему middleware
+        next();
     });
     return
 };

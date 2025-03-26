@@ -850,7 +850,7 @@ describe('/blogs', () => {
             totalCount: expect.any(Number), // Ожидаемое общее количество комментариев
             items: expect.any(Array), // Массив комментариев (проверяем только тип)
         });
-        console.log(res.body.items[0])
+        console.log(res.body.items)
         console.log(accessToken)
         // Проверяем структуру каждого комментария
         if (res.body.items.length > 0) {

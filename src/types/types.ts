@@ -58,7 +58,21 @@ export interface UserAuthModel  {
     _id: ObjectId;
     login: string;
     email: string;
-    passwordHash: string; //
+    passwordHash: string;
+}
+export interface RegisterUserDB<T> {
+    login: string;
+    email: string;
+    passwordHash: string;
+    emailConfirmation: T;
+}
+export interface EmailConfirmation {
+    confirmationCode: string;
+    expirationDate: Date;
+    isConfirmed: boolean;
+}
+export interface RegistrationEmailResending {
+    email: string;
 }
 export interface CommentInputModel  {
     content: string;

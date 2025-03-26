@@ -28,7 +28,12 @@ export const usersService = {
         return await usersRepository.createUser({
             login: userData.login,
             email: userData.email,
-            passwordHash
+            passwordHash,
+            emailConfirmation: {
+                confirmationCode: null,
+                expirationDate: null,
+                isConfirmed: true
+            }
         });
     },
 

@@ -1,5 +1,5 @@
 import { getUsersCollection } from '../db/mongoDB';
-import {UserAuthModel} from '../types/types';
+import {EmailConfirmation, RegisterUserDB, UserAuthModel, UserViewModel} from '../types/types';
 
 
 export const authRepository = {
@@ -8,5 +8,46 @@ export const authRepository = {
             { $or: [{ login: loginOrEmail }, { email: loginOrEmail }] },
             { projection: { _id: 1, login: 1, email: 1, passwordHash: 1 } }
         );
+    },
+    async findByConfirmationCode(code: string): Promise<RegisterUserDB<EmailConfirmation> | null> {
+        return getUsersCollection().findOne({
+            'emailConfirmation.confirmationCode': code
+        });
+    },
+    async updateConfirmationStatus(email: string, status: boolean): Promise<boolean> {
+        try {
+            const result = await getUsersCollection().updateOne(
+                { email: email },
+                {
+                    $set: {
+                        'emailConfirmation.isConfirmed': status
+                    }
+                }
+            );
+            return result.modifiedCount === 1;
+        } catch (error) {
+            console.error('Error updating confirmation status:', error);
+            return false;
+        }
+    },
+    async findByEmail(email: string): Promise<RegisterUserDB<EmailConfirmation> | null> {
+        return getUsersCollection().findOne({ email });
+    },
+
+    async updateConfirmationCode(
+        email: string,
+        newCode: string,
+        expirationDate: Date
+    ): Promise<boolean> {
+        const result = await getUsersCollection().updateOne(
+            { email: email },
+            {
+                $set: {
+                    'emailConfirmation.confirmationCode': newCode,
+                    'emailConfirmation.expirationDate': expirationDate
+                }
+            }
+        );
+        return result.modifiedCount === 1;
     }
 };
