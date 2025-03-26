@@ -99,11 +99,17 @@ export const authService = {
         // Обновляем статус подтверждения
         return authRepository.updateConfirmationStatus(user.email, true);
     },
-    async resendConfirmationEmail(email: string): Promise<boolean> {
-        const user = await authRepository.findByEmail(email);
+    async resendConfirmationEmail(email: string): Promise<{success: boolean, reason?: string}> {
+        // First check if user exists (regardless of confirmation status)
+        const userExists = await authRepository.userExists(email);
+        if (!userExists) {
+            return { success: false, reason: "email" };
+        }
 
-        if (!user || user.emailConfirmation.isConfirmed) {
-            return false;
+        // Then check if already confirmed
+        const user = await authRepository.findByEmail(email);
+        if (!user) { // This now means user exists but is already confirmed
+            return { success: false, reason: "confirmed" };
         }
 
         const newCode: string = randomUUID();
@@ -115,7 +121,7 @@ export const authService = {
             expirationDate
         );
 
-        if (!updated) return false;
+        if (!updated) return { success: false, reason: "update_failed" };
 
         try {
             await nodemailerService.sendEmail(
@@ -123,10 +129,10 @@ export const authService = {
                 newCode,
                 nodemailerService.emailTemplates.registrationEmail
             );
-            return true;
+            return { success: true };
         } catch (error) {
             console.error('Email sending failed:', error);
-            return false;
+            return { success: false, reason: "email_send_failed" };
         }
     }
 

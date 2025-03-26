@@ -31,7 +31,10 @@ export const authRepository = {
         }
     },
     async findByEmail(email: string): Promise<RegisterUserDB<EmailConfirmation> | null> {
-        return getUsersCollection().findOne({ email });
+        return getUsersCollection().findOne({
+            email,
+            'emailConfirmation.isConfirmed': false
+        });
     },
 
     async updateConfirmationCode(
@@ -49,5 +52,9 @@ export const authRepository = {
             }
         );
         return result.modifiedCount === 1;
+    },
+    async userExists(email: string): Promise<boolean> {
+        const count = await getUsersCollection().countDocuments({ email });
+        return count > 0;
     }
 };

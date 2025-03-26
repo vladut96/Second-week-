@@ -27,15 +27,26 @@ authRouter.post('/login', validateAuthInput, handleValidationErrors, async (req:
         return res.status(200).json({ accessToken: authResult.accessToken }); // Return JWT token
     }
 
-    return res.status(401).json({ message: 'Invalid login or password' });
+    return res.status(401).json({
+        errorsMessages: [{
+            message: 'Invalid login or password',
+            field: 'loginOrEmail'
+        }]
+    });
 });
 authRouter.post('/registration', validateUserInput, handleValidationErrors, async (req: Request, res: Response) => {
     const userData: UserInputModel = req.body;
 
     const newUser:RegisterUserDB<EmailConfirmation> | null = await authService.registerUser(userData);
-
     if (!newUser) {
-        return res.status(400).json({ message: 'User already exists' });
+        return res.status(400).json({
+            errorsMessages: [
+                {
+                    message: 'User with this email or login already exists',
+                    field: 'email'
+                }
+            ]
+        });
     }
 
     return res.status(204);
@@ -69,19 +80,25 @@ authRouter.post('/registration-confirmation', validateRegistrationCode, handleVa
 authRouter.post('/registration-email-resending', registrationEmailResendingValidator, handleValidationErrors,async (req: Request, res: Response) => {
         const { email } = req.body;
 
-        const success = await authService.resendConfirmationEmail(email);
-        if (!success) {
-            return res.status(400).json({
-                errorsMessages: [{
-                    message: "Email is already confirmed or doesn't exist",
-                    field: "email"
-                }]
-            });
+    const result = await authService.resendConfirmationEmail(email);
+
+    if (!result.success) {
+        let message = "Email is already confirmed or doesn't exist";
+        if (result.reason === "email") {
+            message = "User with this email doesn't exist";
+        } else if (result.reason === "confirmed") {
+            message = "Email is already confirmed";
         }
+        return res.status(400).json({
+            errorsMessages: [{
+                message,
+                field: "email"
+            }]
+        });
+    }
 
         return res.sendStatus(204);
-    }
-);
+    });
 authRouter.get('/me', authenticateToken, (req: Request, res: Response) => {
     const user = req.user;
 
