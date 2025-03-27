@@ -122,15 +122,14 @@ export const authService = {
         return authRepository.updateConfirmationStatus(user.email, true);
     },
     async resendConfirmationEmail(email: string): Promise<{success: boolean, reason?: string}> {
-        // First check if user exists (regardless of confirmation status)
-        const userExists = await authRepository.userExists(email);
-        if (!userExists) {
+        // First check if user exists
+        const user = await authRepository.findByEmail(email);
+        if (!user) {
             return { success: false, reason: "email" };
         }
 
         // Then check if already confirmed
-        const user = await authRepository.findByEmail(email);
-        if (!user) { // This now means user exists but is already confirmed
+        if (user.emailConfirmation.isConfirmed) {
             return { success: false, reason: "confirmed" };
         }
 

@@ -34,8 +34,7 @@ authRouter.post('/registration', validateUserInput, handleValidationErrors, asyn
         }
 
         return res.sendStatus(204);
-    }
-);
+    });
 authRouter.post('/registration-confirmation', validateRegistrationCode, handleValidationErrors, async (req: Request, res: Response) => {
         const { code } = req.body;
 
