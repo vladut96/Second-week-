@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { authRepository } from '../Repository/authRepository';
 import {comparePasswords, hashPassword} from '../utils/passwordUtils';
-import {EmailConfirmation, MeViewModel, RegisterUserDB, UserInputModel} from "../types/types";
+import {EmailConfirmation, FieldError, MeViewModel, RegisterUserDB, UserInputModel} from "../types/types";
 import {randomUUID} from "crypto";
 import { add } from 'date-fns';
 import dotenv from 'dotenv';
@@ -43,40 +43,62 @@ export const authService = {
 
         return { accessToken };
     },
-    async registerUser(userData: UserInputModel): Promise<RegisterUserDB<EmailConfirmation> | null> {
-        const {login, password, email} = userData;
-        const user = await usersRepository.getUserByLoginOrEmail(login, email);
-        if (user) return null;
-        //проверить существует ли уже юзер с таким логином или почтой и если да - не регистрировать
+    async registerUser(
+        userData: UserInputModel
+    ): Promise<RegisterUserDB<EmailConfirmation> | { errorsMessages: FieldError[] }> {
+        const { login, password, email } = userData;
+
+        // Check for existing user
+        const existingUser = await usersRepository.getUserByLoginOrEmail(login, email);
+
+        if (existingUser) {
+            const errorsMessages: FieldError[] = [];
+
+            // Check which field already exists
+            if (existingUser.login === login) {
+                errorsMessages.push({
+                    message: 'User with this login already exists',
+                    field: 'login'
+                });
+            }
+
+            if (existingUser.email === email) {
+                errorsMessages.push({
+                    message: 'User with this email already exists',
+                    field: 'email'
+                });
+            }
+
+            return { errorsMessages };
+        }
 
         const passwordHash = await hashPassword(password);
+        const confirmationCode = randomUUID();
+        const expirationDate = add(new Date(), { hours: 1, minutes: 30 });
 
-
-        const newUser: RegisterUserDB<EmailConfirmation> = { // сформировать dto юзера
+        const newUser: RegisterUserDB<EmailConfirmation> = {
             login,
             email,
             passwordHash,
-            emailConfirmation: {    // доп поля необходимые для подтверждения
-                confirmationCode: randomUUID(),
-                expirationDate: add(new Date(), {
-                    hours: 1,
-                    minutes: 30,
-                }),
+            emailConfirmation: {
+                confirmationCode,
+                expirationDate,
                 isConfirmed: false
             }
         };
-        await usersRepository.createUser(newUser); // сохранить юзера в базе данных
 
-//отправку сообщения лучше обернуть в try-catch, чтобы при ошибке(например отвалиться отправка) приложение не падало
+        await usersRepository.createUser(newUser);
+
         try {
-             nodemailerService.sendEmail(//отправить сообщение на почту юзера с кодом подтверждения
-                newUser.email,
-                newUser.emailConfirmation!.confirmationCode,
-                nodemailerService.emailTemplates.registrationEmail);
-
-        } catch (e: unknown) {
-            console.error('Send email error', e); //залогировать ошибку при отправке сообщения
+            await nodemailerService.sendEmail(
+                email,
+                confirmationCode,
+                nodemailerService.emailTemplates.registrationEmail
+            );
+        } catch (e) {
+            console.error('Send email error', e);
         }
+
         return newUser;
     },
     async confirmEmail(code: string): Promise<boolean> {

@@ -2,8 +2,7 @@ import { blogsQueryRepository, blogsRepository } from "../Repository/blogsReposi
 import { BlogInputModel, BlogViewModel, Paginator } from "../types/types";
 
 export const blogsQueryService = {
-    async getBlogs({
-                       searchNameTerm,
+    async getBlogs({   searchNameTerm,
                        sortBy,
                        sortDirection,
                        pageNumber,

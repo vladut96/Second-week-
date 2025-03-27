@@ -1,20 +1,11 @@
 import { Request, Response, Router } from 'express';
 import { authService } from '../domain/auth-service';
-import {
-    validateAuthInput,
-    handleValidationErrors,
-    validateUserInput,
+import { validateAuthInput, handleValidationErrors, validateUserInput,
     validateRegistrationCode, registrationEmailResendingValidator
 } from '../validation/express-validator';
 import {authenticateToken} from "../validation/authTokenMiddleware";
-import {
-    EmailConfirmation,
-    MeViewModel,
-    RegisterUserDB,
-    RegistrationEmailResending,
-    UserInputModel
-} from "../types/types";
-import {usersService} from "../domain/users-service";
+import { MeViewModel, UserInputModel } from "../types/types";
+
 
 export const authRouter = Router();
 
@@ -35,22 +26,16 @@ authRouter.post('/login', validateAuthInput, handleValidationErrors, async (req:
     });
 });
 authRouter.post('/registration', validateUserInput, handleValidationErrors, async (req: Request, res: Response) => {
-    const userData: UserInputModel = req.body;
+        const userData: UserInputModel = req.body;
+        const result = await authService.registerUser(userData);
 
-    const newUser:RegisterUserDB<EmailConfirmation> | null = await authService.registerUser(userData);
-    if (!newUser) {
-        return res.status(400).json({
-            errorsMessages: [
-                {
-                    message: 'User with this email or login already exists',
-                    field: 'email'
-                }
-            ]
-        });
+        if ('errorsMessages' in result) {
+            return res.status(400).json(result);
+        }
+
+        return res.sendStatus(204);
     }
-
-    return res.status(204);
-});
+);
 authRouter.post('/registration-confirmation', validateRegistrationCode, handleValidationErrors, async (req: Request, res: Response) => {
         const { code } = req.body;
 
