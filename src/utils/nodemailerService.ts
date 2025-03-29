@@ -72,23 +72,5 @@ export const nodemailerService = {
         `,
             text: `Thank you for your registration!\n\nTo complete your registration, please visit:\nhttps://somesite.com/confirm-email?code={{code}}\n\nThis link will expire in 1 hour.`
         },
-        passwordResetEmail: {
-            subject: 'Password Reset Request',
-            html: `
-        <h1 style="font-size: 20px; font-family: Arial, sans-serif; margin-bottom: 20px;">Password Reset</h1>
-        <p style="font-size: 16px; font-family: Arial, sans-serif; margin-bottom: 15px;">Click the link below to reset your password:</p>
-        <a href="https://somesite.com/password-reset?code={{code}}"
-           style="display: inline-block; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 5px; font-family: Arial, sans-serif; font-size: 16px; margin: 15px 0; line-height: 1.5;">
-            Reset Password
-        </a>
-        <p style="font-size: 14px; font-family: Arial, sans-serif; margin-bottom: 10px; color: #555;">If the button doesn't work, copy and paste this URL into your browser:</p>
-        <p style="font-size: 14px; font-family: Arial, sans-serif; margin-bottom: 15px; color: #333; word-break: break-all;">https://somesite.com/password-reset?code={{code}}</p>
-        <p style="font-size: 14px; font-family: Arial, sans-serif; color: #777;">This link will expire in 1 hour.</p>
-        <p style="font-size: 14px; font-family: Arial, sans-serif; color: #777; margin-top: 20px;">
-            If you didn't request a password reset, please ignore this email or contact support.
-        </p>
-    `,
-            text: `Password Reset Request\n\nWe received a request to reset your password. Click the link below to proceed:\n\nhttps://somesite.com/password-reset?code={{code}}\n\nThis link expires in 1 hour.\n\nIf you didn't request this, please ignore this email.`
-        },
     }
 };

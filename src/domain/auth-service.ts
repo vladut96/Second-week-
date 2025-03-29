@@ -141,6 +141,7 @@ export const authService = {
             newCode,
             expirationDate
         );
+        console.log(newCode);
 
         if (!updated) return { success: false, reason: "update_failed" };
 
