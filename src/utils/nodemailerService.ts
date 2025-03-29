@@ -60,33 +60,32 @@ export const nodemailerService = {
         registrationEmail: {
             subject: 'Confirm Your Registration',
             html: `
-                <h1>Thank you for your registration!</h1>
-                <p>To complete your registration, please enter this confirmation code:</p>
-                <p style="font-size: 24px; font-weight: bold;">{{code}}</p>
-                <p>Or click the button below:</p>
-                <a href="https://somesite.com/confirm-registration?code={{code}}" 
-                   style="display: inline-block; padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 5px;">
-                    Confirm Email
-                </a>
-                <p>This code will expire in 1 hour.</p>
-            `,
-            text: `Thank you for registration!\n\nYour confirmation code: {{code}}\n\nEnter this code on our website to complete registration.\nCode expires in 1 hour.`
+            <h1 style="font-size: 20px; font-family: Arial, sans-serif; margin-bottom: 20px;">Thank you for your registration!</h1>
+            <p style="font-size: 16px; font-family: Arial, sans-serif; margin-bottom: 15px;">To complete your registration, please click the link below:</p>
+            <a href="https://somesite.com/confirm-email?code={{code}}"
+               style="display: inline-block; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 5px; font-family: Arial, sans-serif; font-size: 16px; margin-bottom: 15px;">
+                Complete Registration
+            </a>
+            <p style="font-size: 14px; font-family: Arial, sans-serif; margin-bottom: 10px; color: #555;">If the button doesn't work, copy and paste this URL into your browser:</p>
+            <p style="font-size: 14px; font-family: Arial, sans-serif; margin-bottom: 15px; color: #333; word-break: break-all;">https://somesite.com/confirm-email?code={{code}}</p>
+            <p style="font-size: 14px; font-family: Arial, sans-serif; color: #777;">This link will expire in 1 hour.</p>
+        `,
+            text: `Thank you for your registration!\n\nTo complete your registration, please visit:\nhttps://somesite.com/confirm-email?code={{code}}\n\nThis link will expire in 1 hour.`
         },
         passwordResetEmail: {
             subject: 'Password Reset Request',
             html: `
-    <h1>Password Reset</h1>
-    <p>Click the link below to reset your password:</p>
-    <p>
-      <a href='https://somesite.com/confirm-registration?code={{code}}'>
-        Reset password
-      </a>
-    </p>
-    <p>This link will expire in 1 hour.</p>
-    <p>If the button doesn't work, copy and paste this URL:</p>
-    <p>https://somesite.com/password-reset?code={{code}}</p>
-  `,
-            text: `Password Reset Request\n\nTo reset your password, visit:\nhttps://somesite.com/password-reset?code={{code}}\n\nThis link expires in 30 minutes.`
+            <h1 style="font-size: 20px; font-family: Arial, sans-serif; margin-bottom: 20px;">Password Reset</h1>
+            <p style="font-size: 16px; font-family: Arial, sans-serif; margin-bottom: 15px;">Click the link below to reset your password:</p>
+            <a href="https://somesite.com/password-reset?code={{code}}"
+               style="display: inline-block; padding: 12px 24px; background: #0066cc; color: white; text-decoration: none; border-radius: 5px; font-family: Arial, sans-serif; font-size: 16px; margin-bottom: 15px;">
+                Reset Password
+            </a>
+            <p style="font-size: 14px; font-family: Arial, sans-serif; margin-bottom: 10px; color: #555;">If the button doesn't work, copy and paste this URL into your browser:</p>
+            <p style="font-size: 14px; font-family: Arial, sans-serif; margin-bottom: 15px; color: #333; word-break: break-all;">https://somesite.com/password-reset?code={{code}}</p>
+            <p style="font-size: 14px; font-family: Arial, sans-serif; color: #777;">This link will expire in 1 hour.</p>
+        `,
+            text: `Password Reset Request\n\nTo reset your password, visit:\nhttps://somesite.com/password-reset?code={{code}}\n\nThis link expires in 1 hour.`
         }
     }
 };
