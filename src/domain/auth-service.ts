@@ -20,7 +20,7 @@ export const authService = {
         const isPasswordValid = await comparePasswords(password, user.passwordHash);
         if (!isPasswordValid) return null;
 
-        // Генерируем accessToken с коротким сроком жизни (10 секунд)
+        //  accessToken с коротким сроком жизни (10 секунд)
         const accessToken = jwt.sign(
             {
                 email: user.email,
