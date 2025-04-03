@@ -1,11 +1,18 @@
 import { getUsersCollection } from '../db/mongoDB';
-import {EmailConfirmation, RegisterUserDB, UserAuthModel, UserViewModel} from '../types/types';
+import {EmailConfirmation, RegisterUserDB, UserAuthModel} from '../types/types';
+import {ObjectId} from "mongodb";
 
 
 export const authRepository = {
     async getUserByLoginOrEmail(loginOrEmail: string): Promise<UserAuthModel | null> {
         return await getUsersCollection().findOne<UserAuthModel>(
             { $or: [{ login: loginOrEmail }, { email: loginOrEmail }] },
+            { projection: { _id: 1, login: 1, email: 1, passwordHash: 1 } }
+        );
+    },
+    async getUserById(userId: string): Promise<UserAuthModel | null> {
+        return await getUsersCollection().findOne<UserAuthModel>(
+            { _id: new ObjectId(userId) },
             { projection: { _id: 1, login: 1, email: 1, passwordHash: 1 } }
         );
     },
@@ -53,8 +60,4 @@ export const authRepository = {
         );
         return result.modifiedCount === 1;
     },
-    async userExists(email: string): Promise<boolean> {
-        const count = await getUsersCollection().countDocuments({ email });
-        return count > 0;
-    }
 };

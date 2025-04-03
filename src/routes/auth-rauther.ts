@@ -1,9 +1,9 @@
 import { Request, Response, Router } from 'express';
-import { authService } from '../domain/auth-service';
+import {authService} from '../domain/auth-service';
 import { validateAuthInput, handleValidationErrors, validateUserInput,
     validateRegistrationCode, registrationEmailResendingValidator
 } from '../validation/express-validator';
-import {authenticateToken} from "../validation/authTokenMiddleware";
+import { authenticateToken, validateRefreshToken} from "../validation/authTokenMiddleware";
 import { MeViewModel, UserInputModel } from "../types/types";
 
 
@@ -14,16 +14,25 @@ authRouter.post('/login', validateAuthInput, handleValidationErrors, async (req:
 
     const authResult = await authService.authenticateUser(loginOrEmail, password);
 
-    if (authResult) {
-        return res.status(200).json({ accessToken: authResult.accessToken }); // Return JWT token
+    if (!authResult) {
+        return res.status(401).json({
+            errorsMessages: [{
+                message: 'Invalid login or password',
+                field: 'loginOrEmail'
+            }]
+        });
     }
 
-    return res.status(401).json({
-        errorsMessages: [{
-            message: 'Invalid login or password',
-            field: 'loginOrEmail'
-        }]
+    // Устанавливаем refreshToken в cookie
+    res.cookie('refreshToken', authResult.refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 20000 // 20 секунд
     });
+
+    // Возвращаем accessToken в теле ответа
+    return res.status(200).json({ accessToken: authResult.accessToken });
 });
 authRouter.post('/registration', validateUserInput, handleValidationErrors, async (req: Request, res: Response) => {
         const userData: UserInputModel = req.body;
@@ -96,4 +105,62 @@ authRouter.get('/me', authenticateToken, (req: Request, res: Response) => {
     };
 
     return res.status(200).json(meViewModel);
+});
+authRouter.post('/refresh-token', validateRefreshToken, async (req: Request, res: Response) => {
+    const oldRefreshToken = req.cookies.refreshToken;
+
+    const tokens = await authService.refreshTokenPair(oldRefreshToken);
+    if (!tokens) {
+        return res.sendStatus(401);
+    }
+
+    // Устанавливаем новый refreshToken в cookie
+    res.cookie('refreshToken', tokens.refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 20000, // 20 секунд
+        path: '/auth/refresh-token' // Ограничиваем путь
+    });
+
+    // Возвращаем новый accessToken
+    return res.status(200).json({ accessToken: tokens.accessToken });
+});
+authRouter.post('/logout', validateRefreshToken, async (req: Request, res: Response) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    // Инвалидируем токен
+    const result = await authService.logout(refreshToken);
+    if (!result) {
+        return res.sendStatus(401);
+    }
+
+    // Очищаем cookie
+    res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none'
+    });
+
+    return res.sendStatus(204);
+});
+authRouter.post('/refresh-token', validateRefreshToken, async (req: Request, res: Response) => {
+    const oldRefreshToken = req.cookies.refreshToken;
+
+    // Генерируем новую пару токенов
+    const tokens = await authService.refreshTokenPair(oldRefreshToken);
+    if (!tokens) {
+        return res.sendStatus(401);
+    }
+
+    // Устанавливаем новый refreshToken в cookie
+    res.cookie('refreshToken', tokens.refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        maxAge: 20000 // 20 секунд
+    });
+
+    // Возвращаем новый accessToken
+    return res.status(200).json({ accessToken: tokens.accessToken });
 });

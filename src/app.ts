@@ -7,10 +7,12 @@ import {testingRouter} from "./routes/testing-router";
 import {usersRouter} from "./routes/users-rauter";
 import {authRouter} from "./routes/auth-rauther";
 import {commentsRouter} from "./routes/comments-router";
+import cookieParser from "cookie-parser";
 
-export const app = express() // создать приложение
+export const app = express()
 app.use(express.json()) // создание свойств-объектов body и query во всех реквестах
-app.use(cors()) // разрешить любым фронтам делать запросы на наш бэк
+app.use(cookieParser())
+app.use(cors())
 
 app.get('/', (req, res) => {
     res.status(200).json({version: '1.0'})

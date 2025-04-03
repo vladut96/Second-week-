@@ -96,6 +96,16 @@ export interface MeViewModel {
     userId: string;
 }
 
+export type RefreshTokenModel = {
+    token: string;          // Сам refresh-токен
+    userId: string;         // ID пользователя
+    issuedAt: Date;         // Когда был выдан
+    expiresAt: Date;        // Срок действия
+    isValid: boolean;       // Активен ли токен
+    invalidatedAt?: Date;   // Когда был инвалидирован (если применимо)
+};
+
+
 export interface Paginator<T>  {
     pagesCount: number;
     page: number;

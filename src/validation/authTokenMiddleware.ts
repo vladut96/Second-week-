@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import {refreshTokensRepository} from "../Repository/refreshTokensRepository";
 dotenv.config();
 
 interface JwtPayload {
@@ -41,4 +42,23 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
         next();
     });
     return
+};
+export const validateRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+        return res.sendStatus(401);
+    }
+
+    try {
+        const tokenData = await refreshTokensRepository.findToken(refreshToken);
+        if (!tokenData || !tokenData.isValid || new Date() > tokenData.expiresAt) {
+            return res.sendStatus(401);
+        }
+
+        req.userId = tokenData.userId;
+        return  next();
+    } catch (error) {
+        console.error('Refresh token validation error:', error);
+        return res.sendStatus(401);
+    }
 };

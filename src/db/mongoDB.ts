@@ -4,9 +4,8 @@ import {
     BlogInputModel,
     CommentatorInfo,
     CommentViewModel, EmailConfirmation,
-    PostInputModel,
-    RegisterUserDB,
-    UserViewModel
+    PostInputModel, RefreshTokenModel,
+    RegisterUserDB
 } from "../types/types";
 
 dotenv.config();
@@ -49,6 +48,9 @@ export function getUsersCollection(): Collection<RegisterUserDB<EmailConfirmatio
 }
 export function getCommentsCollection(): Collection<CommentViewModel<CommentatorInfo>> {
     return getDb().collection('Comments');
+}
+export function getRefreshTokensCollection (): Collection<RefreshTokenModel> {
+    return getDb().collection('Refresh Tokens');
 }
 
 console.log("🔍 MONGO_URL:", process.env.MONGO_URL);

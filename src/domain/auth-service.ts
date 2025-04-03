@@ -7,45 +7,49 @@ import { add } from 'date-fns';
 import dotenv from 'dotenv';
 import {usersRepository} from "../Repository/usersRepository";
 import {nodemailerService} from "../utils/nodemailerService";
+import {refreshTokensRepository} from "../Repository/refreshTokensRepository";
 dotenv.config();
 
 const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key';
 
-export const generateAccessToken = (user: MeViewModel) => {
-    return jwt.sign(
-        {
-            email: user.email,
-            login: user.login,
-            userId: user.userId,
-        },
-        JWT_SECRET,
-        { expiresIn: '1h' } // Token expires in 1 hour
-    );
-};
-
 export const authService = {
-    async authenticateUser(loginOrEmail: string, password: string): Promise<{ accessToken: string } | null> {
+    async authenticateUser(loginOrEmail: string, password: string): Promise<{ accessToken: string; refreshToken: string } | null> {
         const user = await authRepository.getUserByLoginOrEmail(loginOrEmail);
-        if (!user) return null; // User not found
+        if (!user) return null;
 
         const isPasswordValid = await comparePasswords(password, user.passwordHash);
-        if (!isPasswordValid) return null; // Invalid password
+        if (!isPasswordValid) return null;
 
-        // Create a MeViewModel object
-        const confirmedUser: MeViewModel = {
-            email: user.email,
-            login: user.login,
+        // Генерируем accessToken с коротким сроком жизни (10 секунд)
+        const accessToken = jwt.sign(
+            {
+                email: user.email,
+                login: user.login,
+                userId: user._id.toString(),
+            },
+            JWT_SECRET,
+            { expiresIn: '10s' } // 10 секунд
+        );
+
+        // Генерируем refreshToken с коротким сроком жизни (20 секунд)
+        const refreshToken = jwt.sign(
+            { userId: user._id.toString() },
+            JWT_SECRET,
+            { expiresIn: '20s' } // 20 секунд
+        );
+
+        // Сохраняем refreshToken в базу
+        await refreshTokensRepository.addToken({
+            token: refreshToken,
             userId: user._id.toString(),
-        };
+            issuedAt: new Date(),
+            expiresAt: new Date(Date.now() + 20000), // +20 секунд
+            isValid: true
+        });
 
-        // Generate JWT token using the reusable function
-        const accessToken = generateAccessToken(confirmedUser);
-
-        return { accessToken };
+        return { accessToken, refreshToken };
     },
-    async registerUser(
-        userData: UserInputModel
-    ): Promise<RegisterUserDB<EmailConfirmation> | { errorsMessages: FieldError[] }> {
+    async registerUser( userData: UserInputModel ): Promise<RegisterUserDB<EmailConfirmation> | { errorsMessages: FieldError[] }> {
         const { login, password, email } = userData;
 
         // Check for existing user
@@ -156,6 +160,57 @@ export const authService = {
             console.error('Email sending failed:', error);
             return { success: false, reason: "email_send_failed" };
         }
-    }
+    },
+    async refreshTokenPair(oldRefreshToken: string): Promise<{ accessToken: string; refreshToken: string } | null> {
+        // 1. Проверяем валидность старого токена
+        const tokenData = await refreshTokensRepository.findToken(oldRefreshToken);
+        if (!tokenData || !tokenData.isValid || new Date() > tokenData.expiresAt) {
+            return null;
+        }
 
+        // 2. Инвалидируем старый токен
+        await refreshTokensRepository.invalidateToken(oldRefreshToken);
+
+        // 3. Получаем данные пользователя
+        const user = await authRepository.getUserById(tokenData.userId);
+        if (!user) return null;
+
+        // 4. Генерируем новую пару токенов
+        const accessToken = jwt.sign(
+            {
+                email: user.email,
+                login: user.login,
+                userId: user._id.toString(),
+            },
+            JWT_SECRET,
+            { expiresIn: '10s' } // 10 секунд
+        );
+
+        const refreshToken = jwt.sign(
+            { userId: user._id.toString() },
+            JWT_SECRET,
+            { expiresIn: '20s' } // 20 секунд
+        );
+
+        // 5. Сохраняем новый refreshToken
+        await refreshTokensRepository.addToken({
+            token: refreshToken,
+            userId: user._id.toString(),
+            issuedAt: new Date(),
+            expiresAt: new Date(Date.now() + 20000), // +20 секунд
+            isValid: true
+        });
+
+        return { accessToken, refreshToken };
+    },
+    async logout(refreshToken: string): Promise<boolean> {
+        // Проверяем существование токена
+        const tokenData = await refreshTokensRepository.findToken(refreshToken);
+        if (!tokenData || !tokenData.isValid) {
+            return false;
+        }
+
+        // Инвалидируем токен
+        return refreshTokensRepository.invalidateToken(refreshToken);
+    }
 };
