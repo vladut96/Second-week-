@@ -3,7 +3,7 @@ import {authService} from '../domain/auth-service';
 import { validateAuthInput, handleValidationErrors, validateUserInput,
     validateRegistrationCode, registrationEmailResendingValidator
 } from '../validation/express-validator';
-import { authenticateToken, validateRefreshToken} from "../validation/authTokenMiddleware";
+import { validateRefreshToken} from "../validation/authTokenMiddleware";
 import { MeViewModel, UserInputModel } from "../types/types";
 
 
@@ -92,7 +92,7 @@ authRouter.post('/registration-email-resending', registrationEmailResendingValid
 
         return res.sendStatus(204);
     });
-authRouter.get('/me', authenticateToken, (req: Request, res: Response) => {
+authRouter.get('/me', validateRefreshToken, (req: Request, res: Response) => {
     const user = req.user;
 
     if (!user) {
