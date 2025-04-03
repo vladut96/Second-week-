@@ -3,7 +3,7 @@ import {authService} from '../domain/auth-service';
 import { validateAuthInput, handleValidationErrors, validateUserInput,
     validateRegistrationCode, registrationEmailResendingValidator
 } from '../validation/express-validator';
-import { validateRefreshToken} from "../validation/authTokenMiddleware";
+import { validateRefreshToken } from "../validation/authTokenMiddleware";
 import { MeViewModel, UserInputModel } from "../types/types";
 
 
