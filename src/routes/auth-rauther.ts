@@ -3,7 +3,7 @@ import {authService} from '../domain/auth-service';
 import { validateAuthInput, handleValidationErrors, validateUserInput,
     validateRegistrationCode, registrationEmailResendingValidator
 } from '../validation/express-validator';
-import { validateRefreshToken } from "../validation/authTokenMiddleware";
+import {authenticateToken, validateRefreshToken} from "../validation/authTokenMiddleware";
 import { MeViewModel, UserInputModel } from "../types/types";
 
 
@@ -92,7 +92,7 @@ authRouter.post('/registration-email-resending', registrationEmailResendingValid
 
         return res.sendStatus(204);
     });
-authRouter.get('/me', validateRefreshToken, (req: Request, res: Response) => {
+authRouter.get('/me', authenticateToken, (req: Request, res: Response) => {
     const user = req.user;
 
     if (!user) {
@@ -120,7 +120,6 @@ authRouter.post('/refresh-token', validateRefreshToken, async (req: Request, res
         secure: true,
         sameSite: 'none',
         maxAge: 20000, // 20 секунд
-        path: '/auth/refresh-token' // Ограничиваем путь
     });
 
     // Возвращаем новый accessToken

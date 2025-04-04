@@ -3,6 +3,9 @@ import { runDb } from "../src/db/mongoDB";
 import { config } from 'dotenv'
 config()
 import {BlogViewModel, PostInputModel, PostViewModel, UserViewModel} from "../src/types/types";
+import * as cookieParser from 'set-cookie-parser';
+// @ts-ignore
+import jwt from "jsonwebtoken";
 
 let createdBlog: BlogViewModel; /// first one
 let createdBlogForTestingDelete: BlogViewModel; /// from 3rd
@@ -10,9 +13,10 @@ let createdPost: PostViewModel; /// first one
 let createdPostForTestingDelete: PostViewModel; //from second
 let createdUser:UserViewModel; /// first one
 let createdUserForTestingDelete:UserViewModel; //from second
-let createdComment;
-let createdCommentForTestingDelete;
 let accessToken:string;
+let refreshToken :string;
+let newAccessToken: string;
+let newRefreshToken: string;
 
 describe('/blogs', () => {
     beforeAll(async () => {
@@ -22,6 +26,7 @@ describe('/blogs', () => {
         await req.delete('/testing/all-data');
     });
 
+    ///BLOGS
     it('POST should create a new blog with valid data 1', async () => {
         const validCredentials = Buffer.from('admin:qwerty').toString('base64');
 
@@ -107,7 +112,7 @@ describe('/blogs', () => {
             websiteUrl: 'https://testblog.com',
         };
 
-        const res = await req
+         await req
             .post('/blogs')
             .set('Authorization', `Basic ${notValidCredentials}`)
             .send(newBlog)
@@ -642,7 +647,7 @@ describe('/blogs', () => {
             email: 'newuser@example.com',
         };
 
-        const res = await req
+        await req
             .post('/users')
             .set('Authorization', `Basic ${notValidCredentials}`)
             .send(newUser)
@@ -731,7 +736,7 @@ describe('/blogs', () => {
     it('GET should return 401 with wrong credentials', async () => {
         const notValidCredentials = Buffer.from('wronglogin:wrongpassword').toString('base64');
 
-        const res = await req
+        await req
             .get('/users')
             .set('Authorization', `Basic ${notValidCredentials}`)
             .expect(401);
@@ -850,8 +855,6 @@ describe('/blogs', () => {
             totalCount: expect.any(Number), // Ожидаемое общее количество комментариев
             items: expect.any(Array), // Массив комментариев (проверяем только тип)
         });
-        console.log(res.body.items)
-        console.log(accessToken)
         // Проверяем структуру каждого комментария
         if (res.body.items.length > 0) {
             const comment = res.body.items[0];
@@ -939,8 +942,118 @@ describe('/blogs', () => {
             .expect(401);
     });
 
+    ///AUTH
 
+        it('POST /auth/login should return 200 and JWT tokens for valid credentials', async () => {
 
+            const res = await req
+                .post('/auth/login')
+                .send({
+                    loginOrEmail: createdUser.email,
+                    password: 'Password'})
+                .expect(200);
+
+            const cookies = cookieParser.parse(res.headers['set-cookie']);
+
+            // Находим refreshToken
+            const refreshTokenCookie = cookies.find(c => c.name === 'refreshToken');
+            expect(refreshTokenCookie).toBeDefined();
+
+            // Сохраняем токен
+            refreshToken = refreshTokenCookie!.value;
+            expect(refreshToken).toBeDefined();
+        });
+        it('POST /auth/login  should return 400 for invalid input data', async () => {
+            const invalidCredentials = {
+                loginOrEmail: createdUser.email,
+                password: 'short' // Слишком короткий пароль
+            };
+
+            const res = await req
+                .post('/auth/login')
+                .send(invalidCredentials)
+                .expect(400);
+
+            expect(res.body).toEqual({
+                errorsMessages: expect.arrayContaining([
+                    expect.objectContaining({
+                        message: expect.any(String),
+                        field: expect.stringMatching(/password/)
+                    })
+                ])
+            });
+        });
+        it('POST /auth/login should return 401 for incorrect credentials', async () => {
+            const wrongCredentials = {
+                loginOrEmail: 'testuser',
+                password: 'wrongpassword'
+            };
+
+            await req
+                .post('/auth/login')
+                .send(wrongCredentials)
+                .expect(401);
+        });
+
+    it('should return 200 and new tokens with valid refresh token', async () => {
+        const res = await req
+            .post('/auth/refresh-token')
+            .set('Cookie', [`refreshToken=${refreshToken}`])
+            .expect(200);
+
+        // Verify new access token in response body
+        expect(res.body).toHaveProperty('accessToken');
+        newAccessToken = res.body.accessToken;
+
+        // Verify new refresh token in cookies
+        const cookies = cookieParser.parse(res.headers['set-cookie']);
+        const refreshTokenCookie = cookies.find(c => c.name === 'refreshToken');
+        expect(refreshTokenCookie).toBeDefined();
+        newRefreshToken = refreshTokenCookie!.value;
+        console.log(refreshToken);
+        console.log(newRefreshToken);
+        // Verify tokens are different from initial ones
+        expect(newAccessToken).not.toBe(refreshToken);
+        expect(newRefreshToken).not.toBe(refreshToken);
+
+    });
+
+    it('should return 401 when using old refresh token (should be revoked)', async () => {
+        await req
+            .post('/auth/refresh-token')
+            .set('Cookie', [`refreshToken=${refreshToken}`])
+            .expect(401);
+    });
+
+    it('should return 401 when using invalid refresh token', async () => {
+        await req
+            .post('/auth/refresh-token')
+            .set('Cookie', ['refreshToken=invalidtoken123'])
+            .expect(401);
+    });
+
+    it('should return 401 when no refresh token provided', async () => {
+        await req
+            .post('/auth/refresh-token')
+            .expect(401);
+    });
+
+    it('should return new tokens with proper expiration', async () => {
+        const res = await req
+            .post('/auth/refresh-token')
+            .set('Cookie', [`refreshToken=${newRefreshToken}`])
+            .expect(200);
+
+        // Verify access token expires in 10 seconds
+        const accessTokenPayload = jwt.decode(res.body.accessToken) as { exp: number };
+        const accessTokenExpiresIn = accessTokenPayload.exp - Math.floor(Date.now() / 1000);
+        expect(accessTokenExpiresIn).toBeLessThanOrEqual(10);
+
+        // Verify refresh token expires in 20 seconds
+        const cookies = cookieParser.parse(res.headers['set-cookie']);
+        const refreshTokenCookie = cookies.find(c => c.name === 'refreshToken')!;
+        expect(refreshTokenCookie.maxAge).toBeLessThanOrEqual(20000);
+    });
 });
 
 
