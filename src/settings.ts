@@ -1,8 +1,7 @@
 import {config} from 'dotenv'
-config() // добавление переменных из файла .env в process.env
+config()
 
 export const SETTINGS = {
-    // все хардкодные значения должны быть здесь, для удобства их изменения
     PORT: process.env.PORT || 3003,
     PATH: {
         TESTING: '/testing',
@@ -11,6 +10,6 @@ export const SETTINGS = {
         BLOGS: '/blogs',
         USERS: '/users',
         COMMENTS: '/comments',
-        DEVICES: '/deviceS',
+        SECURITY: '/security',
     },
     }

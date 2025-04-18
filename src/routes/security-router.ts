@@ -3,7 +3,7 @@ import {getDevicesCollection} from "../db/mongoDB";
 import { validateRefreshToken} from "../validation/authTokenMiddleware";
 export const securityRouter = Router();
 
-securityRouter.get('/hometask_09/api/security/devices', validateRefreshToken, async (req: Request, res: Response) => {
+securityRouter.get('/devices', validateRefreshToken, async (req: Request, res: Response) => {
     const { userId } = req.context!;
 
     try {
@@ -23,7 +23,7 @@ securityRouter.get('/hometask_09/api/security/devices', validateRefreshToken, as
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-securityRouter.delete('/', validateRefreshToken, async (req: Request, res: Response) => {
+securityRouter.delete('/devices', validateRefreshToken, async (req: Request, res: Response) => {
     const { userId, deviceId } = req.context!;
 
     try {
@@ -41,7 +41,7 @@ securityRouter.delete('/', validateRefreshToken, async (req: Request, res: Respo
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-securityRouter.delete('/:deviceId', validateRefreshToken, async (req: Request, res: Response) => {
+securityRouter.delete('devices/:deviceId', validateRefreshToken, async (req: Request, res: Response) => {
     const { userId } = req.context!;
     const deviceId = req.params.deviceId;
 
