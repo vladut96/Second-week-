@@ -1,94 +1,50 @@
-import jwt from 'jsonwebtoken';
 import { authRepository } from '../Repository/authRepository';
-import {comparePasswords, hashPassword} from '../utils/passwordUtils';
-import {EmailConfirmation, FieldError, MeViewModel, RegisterUserDB, UserInputModel} from "../types/types";
+import { comparePasswords, hashPassword } from '../utils/passwordUtils';
+import { usersRepository } from "../Repository/usersRepository";
+import { nodemailerService } from "../utils/nodemailerService";
+import { generateTokens, createEmailConfirmation } from '../utils/authUtils';
+import {EmailConfirmation, FieldError, RegisterUserDB, UserInputModel, UserPublicModel} from "../types/types";
 import {randomUUID} from "crypto";
-import { add } from 'date-fns';
-import dotenv from 'dotenv';
-import {usersRepository} from "../Repository/usersRepository";
-import {nodemailerService} from "../utils/nodemailerService";
-import {refreshTokensRepository} from "../Repository/refreshTokensRepository";
-dotenv.config();
-
-const JWT_SECRET: string = process.env.JWT_SECRET || 'your-secret-key';
+import jwt, {JwtPayload} from "jsonwebtoken";
 
 export const authService = {
-    async authenticateUser(loginOrEmail: string, password: string): Promise<{ accessToken: string; refreshToken: string } | null> {
+    async authenticateUser(loginOrEmail: string, password: string, deviceName: string, ip: string) {
         const user = await authRepository.getUserByLoginOrEmail(loginOrEmail);
-        if (!user) return null;
+        if (!user || !await comparePasswords(password, user.passwordHash)) {
+            return null;
+        }
 
-        const isPasswordValid = await comparePasswords(password, user.passwordHash);
-        if (!isPasswordValid) return null;
+        const deviceId = randomUUID();
+        const { accessToken, refreshToken } = generateTokens(user, deviceId);
+        const refreshDecode = jwt.decode(refreshToken) as JwtPayload
 
-        //  accessToken с коротким сроком жизни (10 секунд)
-        const accessToken = jwt.sign(
-            {
-                email: user.email,
-                login: user.login,
-                userId: user._id.toString(),
-            },
-            JWT_SECRET,
-            { expiresIn: '10s' } // 10 секунд
-        );
-
-        // Генерируем refreshToken с коротким сроком жизни (20 секунд)
-        const refreshToken = jwt.sign(
-            { userId: user._id.toString() },
-            JWT_SECRET,
-            { expiresIn: '20s' } // 20 секунд
-        );
-
-        // Сохраняем refreshToken в базу
-        await refreshTokensRepository.addToken({
-            token: refreshToken,
+        await authRepository.createDeviceSession({
             userId: user._id.toString(),
-            issuedAt: new Date(),
-            expiresAt: new Date(Date.now() + 20000), // +20 секунд
-            isValid: true
+            deviceId,
+            iat: refreshDecode.iat,
+            deviceName,
+            ip,
+            exp: refreshDecode.exp
         });
 
         return { accessToken, refreshToken };
     },
-    async registerUser( userData: UserInputModel ): Promise<RegisterUserDB<EmailConfirmation> | { errorsMessages: FieldError[] }> {
+    async registerUser(userData: UserInputModel) {
         const { login, password, email } = userData;
-
-        // Check for existing user
         const existingUser = await usersRepository.getUserByLoginOrEmail(login, email);
 
         if (existingUser) {
             const errorsMessages: FieldError[] = [];
-
-            // Check which field already exists
-            if (existingUser.login === login) {
-                errorsMessages.push({
-                    message: 'User with this login already exists',
-                    field: 'login'
-                });
-            }
-
-            if (existingUser.email === email) {
-                errorsMessages.push({
-                    message: 'User with this email already exists',
-                    field: 'email'
-                });
-            }
-
+            if (existingUser.login === login) errorsMessages.push({ message: 'User with this login already exists', field: 'login' });
+            if (existingUser.email === email) errorsMessages.push({ message: 'User with this email already exists', field: 'email' });
             return { errorsMessages };
         }
-
-        const passwordHash = await hashPassword(password);
-        const confirmationCode = randomUUID();
-        const expirationDate = add(new Date(), { hours: 1, minutes: 30 });
 
         const newUser: RegisterUserDB<EmailConfirmation> = {
             login,
             email,
-            passwordHash,
-            emailConfirmation: {
-                confirmationCode,
-                expirationDate,
-                isConfirmed: false
-            }
+            passwordHash: await hashPassword(password),
+            emailConfirmation: createEmailConfirmation()
         };
 
         await usersRepository.createUser(newUser);
@@ -96,7 +52,7 @@ export const authService = {
         try {
             await nodemailerService.sendEmail(
                 email,
-                confirmationCode,
+                newUser.emailConfirmation.confirmationCode,
                 nodemailerService.emailTemplates.registrationEmail
             );
         } catch (e) {
@@ -105,54 +61,32 @@ export const authService = {
 
         return newUser;
     },
-    async confirmEmail(code: string): Promise<boolean> {
+    async confirmEmail(code: string) {
         const user = await authRepository.findByConfirmationCode(code);
-
-        if (!user) {
+        if (!user || user.emailConfirmation.isConfirmed || new Date() > user.emailConfirmation.expirationDate) {
+            console.log(`Confirmation failed for code ${code}`);
             return false;
         }
-
-        // Проверка на уже подтверждённый email
-        if (user.emailConfirmation.isConfirmed) {
-            return false;
-        }
-
-        if (new Date() > user.emailConfirmation.expirationDate) {
-             console.log(`Confirmation code expired for user ${user.email}`);
-             return false;
-        }
-
-        // Обновляем статус подтверждения
         return authRepository.updateConfirmationStatus(user.email, true);
     },
-    async resendConfirmationEmail(email: string): Promise<{success: boolean, reason?: string}> {
-        // First check if user exists
+    async resendConfirmationEmail(email: string) {
         const user = await authRepository.findByEmail(email);
-        if (!user) {
-            return { success: false, reason: "email" };
-        }
+        if (!user) return { success: false, reason: "email" };
+        if (user.emailConfirmation.isConfirmed) return { success: false, reason: "confirmed" };
 
-        // Then check if already confirmed
-        if (user.emailConfirmation.isConfirmed) {
-            return { success: false, reason: "confirmed" };
-        }
-
-        const newCode: string = randomUUID();
-        const expirationDate = add(new Date(), { hours: 1 });
-
+        const newConfirmation = createEmailConfirmation();
         const updated = await authRepository.updateConfirmationCode(
             email,
-            newCode,
-            expirationDate
+            newConfirmation.confirmationCode,
+            newConfirmation.expirationDate
         );
-        console.log(newCode);
 
         if (!updated) return { success: false, reason: "update_failed" };
 
         try {
             await nodemailerService.sendEmail(
                 email,
-                newCode,
+                newConfirmation.confirmationCode,
                 nodemailerService.emailTemplates.registrationEmail
             );
             return { success: true };
@@ -161,56 +95,36 @@ export const authService = {
             return { success: false, reason: "email_send_failed" };
         }
     },
-    async refreshTokenPair(oldRefreshToken: string): Promise<{ accessToken: string; refreshToken: string } | null> {
-        // 1. Проверяем валидность старого токена
-        const tokenData = await refreshTokensRepository.findToken(oldRefreshToken);
-        if (!tokenData || !tokenData.isValid || new Date() > tokenData.expiresAt) {
+    async refreshTokenPair(userId: string, deviceId: string) {
+        try {
+            const user = await authRepository.getUserById(userId);
+
+            if (!user) {
+                return null;
+            }
+            const { _id, email, login } = user;
+
+            const { accessToken, refreshToken } = generateTokens({ _id, email, login }, deviceId);
+            const newRefreshDecoded = jwt.decode(refreshToken) as JwtPayload;
+
+            await authRepository.updateDeviceSession({
+                deviceId,
+                iat: newRefreshDecoded.iat!,
+                exp: newRefreshDecoded.exp!,
+            });
+
+            return { accessToken, refreshToken };
+        } catch (error) {
+            console.error('Refresh token error:', error);
             return null;
         }
-
-        // 2. Инвалидируем старый токен
-        await refreshTokensRepository.invalidateToken(oldRefreshToken);
-
-        // 3. Получаем данные пользователя
-        const user = await authRepository.getUserById(tokenData.userId);
-        if (!user) return null;
-
-        // 4. Генерируем новую пару токенов
-        const accessToken = jwt.sign(
-            {
-                email: user.email,
-                login: user.login,
-                userId: user._id.toString(),
-            },
-            JWT_SECRET,
-            { expiresIn: '10s' } // 10 секунд
-        );
-
-        const refreshToken = jwt.sign(
-            { userId: user._id.toString() },
-            JWT_SECRET,
-            { expiresIn: '20s' } // 20 секунд
-        );
-
-        // 5. Сохраняем новый refreshToken
-        await refreshTokensRepository.addToken({
-            token: refreshToken,
-            userId: user._id.toString(),
-            issuedAt: new Date(),
-            expiresAt: new Date(Date.now() + 20000), // +20 секунд
-            isValid: true
-        });
-
-        return { accessToken, refreshToken };
     },
-    async logout(refreshToken: string): Promise<boolean> {
-        // Проверяем существование токена
-        const tokenData = await refreshTokensRepository.findToken(refreshToken);
-        if (!tokenData || !tokenData.isValid) {
+    async logout( userId: string, deviceId: string): Promise<boolean> {
+        try {
+            return await authRepository.deleteDeviceSession(userId, deviceId);
+        } catch (error) {
+            console.error('Logout service error:', error);
             return false;
         }
-
-        // Инвалидируем токен
-        return refreshTokensRepository.invalidateToken(refreshToken);
     }
 };

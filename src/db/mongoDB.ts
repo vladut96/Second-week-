@@ -3,9 +3,9 @@ import * as dotenv from 'dotenv';
 import {
     BlogInputModel,
     CommentatorInfo,
-    CommentViewModel, EmailConfirmation,
+    CommentViewModel, DeviceAuthSession, EmailConfirmation,
     PostInputModel, RefreshTokenModel,
-    RegisterUserDB
+    RegisterUserDB, RequestLog
 } from "../types/types";
 
 dotenv.config();
@@ -51,6 +51,12 @@ export function getCommentsCollection(): Collection<CommentViewModel<Commentator
 }
 export function getRefreshTokensCollection (): Collection<RefreshTokenModel> {
     return getDb().collection('Refresh Tokens');
+}
+export function getRequestLogsCollection(): Collection<RequestLog> {
+    return getDb().collection('RequestLogs');
+}
+export function getDevicesCollection(): Collection<DeviceAuthSession> {
+    return getDb().collection('Devices');
 }
 
 console.log("🔍 MONGO_URL:", process.env.MONGO_URL);

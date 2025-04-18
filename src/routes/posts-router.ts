@@ -37,10 +37,12 @@ postsRouter.post("/:postId/comments", authenticateToken, validateComment, handle
     if (!postExists) {
         return res.sendStatus(404);
     }
+
     const newComment = await commentsService.createComment({
         postId,
         content,
         userId,
+        // @ts-ignore
         userLogin
     });
     return res.status(201).json(newComment);

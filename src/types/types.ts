@@ -5,9 +5,6 @@ export interface FieldError {
     message: string;
     field: string;
 }
-export interface APIErrorResult {
-    errorsMessages?: FieldError[] | null;
-}
 export interface PostInputModel {
     title: string;
     shortDescription: string;
@@ -60,6 +57,8 @@ export interface UserAuthModel  {
     email: string;
     passwordHash: string;
 }
+export type UserPublicModel = Omit<UserAuthModel, 'passwordHash'>;
+
 export interface RegisterUserDB<T> {
     login: string;
     email: string;
@@ -70,9 +69,6 @@ export interface EmailConfirmation {
     confirmationCode: string;
     expirationDate: Date;
     isConfirmed: boolean;
-}
-export interface RegistrationEmailResending {
-    email: string;
 }
 export interface CommentInputModel  {
     content: string;
@@ -87,15 +83,25 @@ export interface CommentatorInfo {
     userId: string;
     userLogin: string;
 }
-export interface LoginSuccessViewModel {
-    accessToken : string;
-}
 export interface MeViewModel {
-    email: string;
-    login: string;
+    email?: string;  // Делаем опциональным
+    login?: string;  // Делаем опциональным
     userId: string;
+    deviceId?: string;
 }
-
+export interface RequestLog {
+    IP: string;
+    URL: string;
+    date: Date;
+}
+export interface DeviceAuthSession {
+    userId: string;
+    deviceId: string;
+    iat?: number;
+    deviceName: string;
+    ip: string;
+    exp?: number;
+}
 export type RefreshTokenModel = {
     token: string;          // Сам refresh-токен
     userId: string;         // ID пользователя
@@ -104,7 +110,6 @@ export type RefreshTokenModel = {
     isValid: boolean;       // Активен ли токен
     invalidatedAt?: Date;   // Когда был инвалидирован (если применимо)
 };
-
 
 export interface Paginator<T>  {
     pagesCount: number;

@@ -1,18 +1,27 @@
 import { Request, Response, Router } from 'express';
+import { UAParser } from 'ua-parser-js';
 import {authService} from '../domain/auth-service';
 import { validateAuthInput, handleValidationErrors, validateUserInput,
     validateRegistrationCode, registrationEmailResendingValidator
 } from '../validation/express-validator';
 import {authenticateToken, validateRefreshToken} from "../validation/authTokenMiddleware";
 import { MeViewModel, UserInputModel } from "../types/types";
-
+import {requestLoggerMiddleware} from "../validation/requestLoggerMiddleware";
 
 export const authRouter = Router();
 
-authRouter.post('/login', validateAuthInput, handleValidationErrors, async (req: Request, res: Response) => {
-    const { loginOrEmail, password } = req.body;
+authRouter.post('/login', requestLoggerMiddleware, validateAuthInput, handleValidationErrors, async (req: Request, res: Response) => {
+    const { loginOrEmail, password } = req.body ;
+    const ip: string = req.ip || 'Undefined';
+    const userAgent = req.headers['user-agent'] || 'Unknown';
+    const parser = new UAParser(userAgent);
+    const deviceType = parser.getDevice().type || 'desktop'; // mobile, tablet, desktop
+    const browser = parser.getBrowser().name || 'Unknown Browser';
+    const os = parser.getOS().name || 'Unknown OS';
 
-    const authResult = await authService.authenticateUser(loginOrEmail, password);
+    const deviceName = `${browser} on ${os} (${deviceType})`;
+
+    const authResult = await authService.authenticateUser(loginOrEmail, password, deviceName, ip);
 
     if (!authResult) {
         return res.status(401).json({
@@ -22,19 +31,13 @@ authRouter.post('/login', validateAuthInput, handleValidationErrors, async (req:
             }]
         });
     }
-
-    // Устанавливаем refreshToken в cookie
     res.cookie('refreshToken', authResult.refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 20000 // 20 секунд
+        httpOnly: false,
+        secure: false,
     });
-
-    // Возвращаем accessToken в теле ответа
     return res.status(200).json({ accessToken: authResult.accessToken });
 });
-authRouter.post('/registration', validateUserInput, handleValidationErrors, async (req: Request, res: Response) => {
+authRouter.post('/registration', requestLoggerMiddleware, validateUserInput, handleValidationErrors, async (req: Request, res: Response) => {
         const userData: UserInputModel = req.body;
         const result = await authService.registerUser(userData);
 
@@ -44,7 +47,7 @@ authRouter.post('/registration', validateUserInput, handleValidationErrors, asyn
 
         return res.sendStatus(204);
     });
-authRouter.post('/registration-confirmation', validateRegistrationCode, handleValidationErrors, async (req: Request, res: Response) => {
+authRouter.post('/registration-confirmation', requestLoggerMiddleware, validateRegistrationCode, handleValidationErrors, async (req: Request, res: Response) => {
         const { code } = req.body;
 
         try {
@@ -70,7 +73,7 @@ authRouter.post('/registration-confirmation', validateRegistrationCode, handleVa
             });
         }
     });
-authRouter.post('/registration-email-resending', registrationEmailResendingValidator, handleValidationErrors,async (req: Request, res: Response) => {
+authRouter.post('/registration-email-resending', requestLoggerMiddleware, registrationEmailResendingValidator, handleValidationErrors,async (req: Request, res: Response) => {
         const { email } = req.body;
 
     const result = await authService.resendConfirmationEmail(email);
@@ -107,59 +110,46 @@ authRouter.get('/me', authenticateToken, (req: Request, res: Response) => {
     return res.status(200).json(meViewModel);
 });
 authRouter.post('/refresh-token', validateRefreshToken, async (req: Request, res: Response) => {
-    const oldRefreshToken = req.cookies.refreshToken;
+        try {
+            const {userId, deviceId} = req.context!;
 
-    const tokens = await authService.refreshTokenPair(oldRefreshToken);
-    if (!tokens) {
-        return res.sendStatus(401);
-    }
+            const tokens = await authService.refreshTokenPair(userId, deviceId);
+            if (!tokens) {
+                return res.sendStatus(401);
+            }
 
-    // Устанавливаем новый refreshToken в cookie
-    res.cookie('refreshToken', tokens.refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 20000, // 20 секунд
+            res.cookie('refreshToken', tokens.refreshToken, {
+                httpOnly: false,
+                secure: false,
+            });
+
+            return res.status(200).json({ accessToken: tokens.accessToken });
+        } catch (error) {
+            console.error('Refresh token endpoint error:', error);
+            return res.sendStatus(500);
+        }
+    });
+authRouter.post('/logout',validateRefreshToken, async (req: Request, res: Response) => {
+        try {
+             const {  userId, deviceId } = req.context!;
+
+            const logoutResult = await authService.logout( userId, deviceId);
+
+            if (!logoutResult) {
+                return res.sendStatus(401);
+            }
+
+            // Очищаем куку с refreshToken
+            /*res.clearCookie('refreshToken', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+            });*/
+
+            return res.sendStatus(204);
+        } catch (error) {
+            console.error('Logout error:', error);
+            return res.sendStatus(500);
+        }
     });
 
-    // Возвращаем новый accessToken
-    return res.status(200).json({ accessToken: tokens.accessToken });
-});
-authRouter.post('/logout', validateRefreshToken, async (req: Request, res: Response) => {
-    const refreshToken = req.cookies.refreshToken;
-
-    // Инвалидируем токен
-    const result = await authService.logout(refreshToken);
-    if (!result) {
-        return res.sendStatus(401);
-    }
-
-    // Очищаем cookie
-    res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none'
-    });
-
-    return res.sendStatus(204);
-});
-authRouter.post('/refresh-token', validateRefreshToken, async (req: Request, res: Response) => {
-    const oldRefreshToken = req.cookies.refreshToken;
-
-    // Генерируем новую пару токенов
-    const tokens = await authService.refreshTokenPair(oldRefreshToken);
-    if (!tokens) {
-        return res.sendStatus(401);
-    }
-
-    // Устанавливаем новый refreshToken в cookie
-    res.cookie('refreshToken', tokens.refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'none',
-        maxAge: 20000 // 20 секунд
-    });
-
-    // Возвращаем новый accessToken
-    return res.status(200).json({ accessToken: tokens.accessToken });
-});

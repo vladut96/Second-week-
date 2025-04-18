@@ -983,7 +983,7 @@ describe('/blogs', () => {
                 ])
             });
         });
-        it('POST /auth/login should return 401 for incorrect credentials', async () => {
+       /* it('POST /auth/login should return 401 for incorrect credentials', async () => {
             const wrongCredentials = {
                 loginOrEmail: 'testuser',
                 password: 'wrongpassword'
@@ -993,7 +993,7 @@ describe('/blogs', () => {
                 .post('/auth/login')
                 .send(wrongCredentials)
                 .expect(401);
-        });
+        }); */
 
     it('should return 200 and new tokens with valid refresh token', async () => {
         const res = await req

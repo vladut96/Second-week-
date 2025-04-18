@@ -1,14 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, {JwtPayload} from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import {refreshTokensRepository} from "../Repository/refreshTokensRepository";
+import {authRepository} from "../Repository/authRepository";
 dotenv.config();
-
-interface JwtPayload {
-    userId: string;
-    email: string;
-    login: string;
-}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -46,19 +40,36 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 export const validateRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
-        return res.sendStatus(401);
+        return res.status(401).json({
+            errorsMessages: [{ message: "Refresh token missing", field: "refreshToken" }]
+        });
     }
 
     try {
-        const tokenData = await refreshTokensRepository.findToken(refreshToken);
-        if (!tokenData || !tokenData.isValid || new Date() > tokenData.expiresAt) {
+        const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as {
+            userId: string;
+            deviceId: string;
+            iat: number;
+            exp: number;
+        };
+
+        // Получаем сессию с проверкой iat
+        const activeSession = await authRepository.findSessionByDeviceId(decoded.deviceId);
+
+        if (!activeSession || activeSession.iat !== decoded.iat)
+        {
+
             return res.sendStatus(401);
         }
 
-        req.userId = tokenData.userId;
-        return  next();
+        req.context = {
+            userId: decoded.userId,
+            deviceId: decoded.deviceId,
+        };
+
+        return next();
     } catch (error) {
-        console.error('Refresh token validation error:', error);
+
         return res.sendStatus(401);
     }
 };
