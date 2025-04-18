@@ -32,8 +32,8 @@ authRouter.post('/login', requestLoggerMiddleware, validateAuthInput, handleVali
         });
     }
     res.cookie('refreshToken', authResult.refreshToken, {
-        httpOnly: false,
-        secure: false,
+        httpOnly: true,
+        secure: true,
     });
     return res.status(200).json({ accessToken: authResult.accessToken });
 });
@@ -119,8 +119,8 @@ authRouter.post('/refresh-token', validateRefreshToken, async (req: Request, res
             }
 
             res.cookie('refreshToken', tokens.refreshToken, {
-                httpOnly: false,
-                secure: false,
+                httpOnly: true,
+                secure: true,
             });
 
             return res.status(200).json({ accessToken: tokens.accessToken });
@@ -138,13 +138,11 @@ authRouter.post('/logout',validateRefreshToken, async (req: Request, res: Respon
             if (!logoutResult) {
                 return res.sendStatus(401);
             }
-
-            // Очищаем куку с refreshToken
-            /*res.clearCookie('refreshToken', {
+            res.clearCookie('refreshToken', {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
+                secure: true,
                 sameSite: 'strict'
-            });*/
+            });
 
             return res.sendStatus(204);
         } catch (error) {
