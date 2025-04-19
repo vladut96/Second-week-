@@ -92,7 +92,6 @@ export interface MeViewModel {
 export interface RequestLog {
     IP?: string;
     URL: string;
-    method: string;
     date: Date;
 }
 export interface DeviceAuthSession {

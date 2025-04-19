@@ -1,31 +1,39 @@
 import { Request, Response, NextFunction } from 'express';
 import { getRequestLogsCollection } from '../db/mongoDB';
-import rateLimit from 'express-rate-limit';
+import { subSeconds } from 'date-fns';
 
 export const requestLoggerMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const requestLogsCollection = getRequestLogsCollection();
-        const ip = req.ip || req.socket.remoteAddress;
 
-        // Просто логируем запрос
+        // Логируем запрос
         await requestLogsCollection.insertOne({
-            IP: ip,
+            IP: req.ip,
             URL: req.originalUrl,
-            method: req.method,
             date: new Date()
         });
+
+        // Проверяем количество запросов за последние 10 секунд
+        const tenSecondsAgo = subSeconds(new Date(), 10);
+        const requestCount = await requestLogsCollection.countDocuments({
+            IP: req.ip,
+            URL: req.originalUrl,
+            date: { $gte: tenSecondsAgo }
+        });
+
+        // Если больше 5 запросов за 10 секунд - возвращаем ошибку
+        if (requestCount > 5) {
+            return res.status(429).json({
+                errorsMessages: [{
+                    message: 'Too many requests',
+                    field: 'rate limit'
+                }]
+            });
+        }
+
+         return next();
     } catch (error) {
         console.error('Request logging error:', error);
+        next();
     }
-
-    next();
 };
-
-export const createRateLimiter = (windowMs: number, max: number) => rateLimit({
-    windowMs,
-    max,
-    handler: (req, res) => {
-        res.sendStatus(429); // Просто вернуть 429 без тела
-    },
-    keyGenerator: (req) => req.ip || 'unknown'
-});

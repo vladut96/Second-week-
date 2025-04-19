@@ -6,13 +6,12 @@ import { validateAuthInput, handleValidationErrors, validateUserInput,
 } from '../validation/express-validator';
 import {authenticateToken, validateRefreshToken} from "../validation/authTokenMiddleware";
 import { MeViewModel, UserInputModel } from "../types/types";
-import {createRateLimiter, requestLoggerMiddleware} from "../validation/requestLoggerMiddleware";
+import { requestLoggerMiddleware} from "../validation/requestLoggerMiddleware";
 
 export const authRouter = Router();
 
-const authLimiter = createRateLimiter(10 * 1000, 5);
 
-authRouter.post('/login', requestLoggerMiddleware, authLimiter, validateAuthInput, handleValidationErrors, async (req: Request, res: Response) => {
+authRouter.post('/login', requestLoggerMiddleware,  validateAuthInput, handleValidationErrors, async (req: Request, res: Response) => {
     const { loginOrEmail, password } = req.body ;
     const ip: string = req.ip || 'Undefined';
     const userAgent = req.headers['user-agent'] || 'Unknown';
@@ -39,7 +38,7 @@ authRouter.post('/login', requestLoggerMiddleware, authLimiter, validateAuthInpu
     });
     return res.status(200).json({ accessToken: authResult.accessToken });
 });
-authRouter.post('/registration', requestLoggerMiddleware, authLimiter, validateUserInput, handleValidationErrors, async (req: Request, res: Response) => {
+authRouter.post('/registration', requestLoggerMiddleware, validateUserInput, handleValidationErrors, async (req: Request, res: Response) => {
         const userData: UserInputModel = req.body;
         const result = await authService.registerUser(userData);
 
@@ -49,7 +48,7 @@ authRouter.post('/registration', requestLoggerMiddleware, authLimiter, validateU
 
         return res.sendStatus(204);
     });
-authRouter.post('/registration-confirmation', requestLoggerMiddleware, authLimiter, validateRegistrationCode, handleValidationErrors, async (req: Request, res: Response) => {
+authRouter.post('/registration-confirmation', requestLoggerMiddleware, validateRegistrationCode, handleValidationErrors, async (req: Request, res: Response) => {
         const { code } = req.body;
 
         try {
@@ -75,7 +74,7 @@ authRouter.post('/registration-confirmation', requestLoggerMiddleware, authLimit
             });
         }
     });
-authRouter.post('/registration-email-resending', requestLoggerMiddleware, authLimiter, registrationEmailResendingValidator, handleValidationErrors,async (req: Request, res: Response) => {
+authRouter.post('/registration-email-resending', requestLoggerMiddleware, registrationEmailResendingValidator, handleValidationErrors,async (req: Request, res: Response) => {
         const { email } = req.body;
 
     const result = await authService.resendConfirmationEmail(email);
