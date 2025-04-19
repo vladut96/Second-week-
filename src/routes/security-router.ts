@@ -24,20 +24,22 @@ securityRouter.get('/devices', validateRefreshToken, async (req: Request, res: R
     }
 });
 securityRouter.delete('/devices', validateRefreshToken, async (req: Request, res: Response) => {
-    const { userId, deviceId } = req.context!;
-
     try {
-        const result = await getDevicesCollection().deleteMany({
+        if (!req.context || !req.context.userId || !req.context.deviceId) {
+            return res.sendStatus(401);
+        }
+
+        const { userId, deviceId } = req.context;
+
+
+        await getDevicesCollection().deleteMany({
             userId,
             deviceId: { $ne: deviceId }
         });
 
-        if (result.deletedCount === 0) {
-            return res.status(404).json({ message: "No sessions found" });
-        }
-
         return res.sendStatus(204);
     } catch (error) {
+        console.error('Error deleting devices:', error);
         return res.status(500).json({ message: "Internal server error" });
     }
 });
