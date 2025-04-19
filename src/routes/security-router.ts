@@ -43,29 +43,29 @@ securityRouter.delete('/devices', validateRefreshToken, async (req: Request, res
 });
 securityRouter.delete('/devices/:deviceId', validateRefreshToken, async (req: Request, res: Response) => {
     const { userId } = req.context!;
-    const deviceId = req.params.deviceId;
+    const { deviceId } = req.params;
 
     try {
-        // Проверяем существование сессии
-        const session = await getDevicesCollection().findOne({
-            deviceId,
-            userId
-        });
+        const session = await getDevicesCollection().findOne({ deviceId });
 
         if (!session) {
-            return res.status(404).json({ message: "Device not found" });
+            return res.status(404).json({
+                errorsMessages: [{ message: "Device not found", field: "deviceId" }]
+            });
         }
 
-        // Проверяем принадлежность пользователю
+        // Strict ownership check
         if (session.userId !== userId) {
-            return res.sendStatus(403);
+            return res.status(403).json({
+                errorsMessages: [{ message: "Forbidden", field: "userId" }]
+            });
         }
 
-        // Удаляем сессию
         await getDevicesCollection().deleteOne({ deviceId });
         return res.sendStatus(204);
-
     } catch (error) {
-        return res.status(500).json({ message: "Internal server error" });
+        return res.status(500).json({
+            errorsMessages: [{ message: "Internal server error", field: "server" }]
+        });
     }
 });

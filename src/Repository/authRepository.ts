@@ -43,14 +43,7 @@ export const authRepository = {
             'emailConfirmation.isConfirmed': false
         });
     },
-    async createDeviceSession(sessionData: {
-        userId: string;
-        deviceId: string;
-        lastActiveDate?: number;
-        title: string;
-        ip: string;
-        exp?: number;
-    }): Promise<boolean> {
+    async createDeviceSession(sessionData: DeviceAuthSession): Promise<boolean> {
         try {
             const result = await getDevicesCollection().insertOne(sessionData);
             return !!result.insertedId;
@@ -71,8 +64,8 @@ export const authRepository = {
     },
     async updateDeviceSession(sessionData: {
         deviceId: string;
-        lastActiveDate: number;  // Unix timestamp (секунды)
-        exp: number;  // Unix timestamp (секунды)
+        lastActiveDate: string;  // Unix timestamp (секунды)
+        exp: string;  // Unix timestamp (секунды)
     }): Promise<boolean> {
         try {
             const updateFields: any = {
@@ -92,11 +85,7 @@ export const authRepository = {
             return false;
         }
     },
-    async updateConfirmationCode(
-        email: string,
-        newCode: string,
-        expirationDate: Date
-    ): Promise<boolean> {
+    async updateConfirmationCode( email: string, newCode: string, expirationDate: Date ): Promise<boolean> {
         const result = await getUsersCollection().updateOne(
             { email: email },
             {

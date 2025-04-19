@@ -21,10 +21,10 @@ export const authService = {
         await authRepository.createDeviceSession({
             userId: user._id.toString(),
             deviceId,
-            lastActiveDate: refreshDecode.iat,
+            lastActiveDate: new Date(refreshDecode.iat! * 1000).toISOString(),
             title: deviceName,
             ip,
-            exp: refreshDecode.exp
+            exp: new Date(refreshDecode.exp! * 1000).toISOString()
         });
 
         return { accessToken, refreshToken };
@@ -98,19 +98,20 @@ export const authService = {
     async refreshTokenPair(userId: string, deviceId: string) {
         try {
             const user = await authRepository.getUserById(userId);
+            if (!user) return null;
 
-            if (!user) {
+            // Generate new tokens with fresh timestamps
+            const { accessToken, refreshToken } = generateTokens(user, deviceId);
+            const decoded = jwt.decode(refreshToken) as JwtPayload;
+            if (!decoded.iat || !decoded.exp) {
+                console.error('Invalid refresh token payload');
                 return null;
             }
-            const { _id, email, login } = user;
-
-            const { accessToken, refreshToken } = generateTokens({ _id, email, login }, deviceId);
-            const newRefreshDecoded = jwt.decode(refreshToken) as JwtPayload;
-
+            // Update session with new timestamps
             await authRepository.updateDeviceSession({
                 deviceId,
-                lastActiveDate: newRefreshDecoded.iat!,
-                exp: newRefreshDecoded.exp!,
+                lastActiveDate: new Date(decoded.iat * 1000).toISOString(),
+                exp: new Date(decoded.exp * 1000).toISOString()
             });
 
             return { accessToken, refreshToken };

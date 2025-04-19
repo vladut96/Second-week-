@@ -97,10 +97,10 @@ export interface RequestLog {
 export interface DeviceAuthSession {
     userId: string;
     deviceId: string;
-    lastActiveDate?: number;
+    lastActiveDate?: string;
     title: string;
     ip: string;
-    exp?: number;
+    exp?: string;
 }
 export type RefreshTokenModel = {
     token: string;          // Сам refresh-токен
