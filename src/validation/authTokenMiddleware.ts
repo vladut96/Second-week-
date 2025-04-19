@@ -40,18 +40,11 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 export const validateRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = req.cookies?.refreshToken;
 
-    // 1. Check if token exists
     if (!refreshToken) {
-        return res.status(401).json({
-            errorsMessages: [{
-                message: "Refresh token missing",
-                field: "refreshToken"
-            }]
-        });
+        return res.sendStatus(401);
     }
 
     try {
-        // 2. Verify token signature and expiration
         const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET!) as {
             userId: string;
             deviceId: string;
@@ -59,43 +52,20 @@ export const validateRefreshToken = async (req: Request, res: Response, next: Ne
             exp: number;
         };
 
-        // 3. Check session in database
         const activeSession = await authRepository.findSessionByDeviceId(decoded.deviceId);
+        if (!activeSession || !activeSession.lastActiveDate) return res.sendStatus(401);
 
-        // Convert iat to comparable format (ISO string or timestamp)
-        const tokenIatISO = new Date(decoded.iat * 1000).toISOString();
+        // 👇 Сравнение по iat в секундах
+        const sessionIat = Math.floor(new Date(activeSession.lastActiveDate).getTime() / 1000);
+        if (sessionIat !== decoded.iat) return res.sendStatus(401);
 
-        if (!activeSession || activeSession.lastActiveDate !== tokenIatISO) {
-            return res.status(401).json({
-                errorsMessages: [{
-                    message: "Invalid session",
-                    field: "refreshToken"
-                }]
-            });
-        }
-
-        // 4. Set context for downstream middleware
         req.context = {
             userId: decoded.userId,
             deviceId: decoded.deviceId,
         };
 
         return next();
-
     } catch (error) {
-        // Handle different JWT error cases
-        let errorMessage = "Invalid token";
-        if (error instanceof jwt.TokenExpiredError) {
-            errorMessage = "Token expired";
-        } else if (error instanceof jwt.JsonWebTokenError) {
-            errorMessage = "Malformed token";
-        }
-
-        return res.status(401).json({
-            errorsMessages: [{
-                message: errorMessage,
-                field: "refreshToken"
-            }]
-        });
+        return res.sendStatus(401);
     }
 };
