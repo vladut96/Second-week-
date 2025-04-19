@@ -3,7 +3,7 @@ import { comparePasswords, hashPassword } from '../utils/passwordUtils';
 import { usersRepository } from "../Repository/usersRepository";
 import { nodemailerService } from "../utils/nodemailerService";
 import { generateTokens, createEmailConfirmation } from '../utils/authUtils';
-import {EmailConfirmation, FieldError, RegisterUserDB, UserInputModel, UserPublicModel} from "../types/types";
+import {EmailConfirmation, FieldError, RegisterUserDB, UserInputModel} from "../types/types";
 import {randomUUID} from "crypto";
 import jwt, {JwtPayload} from "jsonwebtoken";
 
@@ -21,8 +21,8 @@ export const authService = {
         await authRepository.createDeviceSession({
             userId: user._id.toString(),
             deviceId,
-            iat: refreshDecode.iat,
-            deviceName,
+            lastActiveDate: refreshDecode.iat,
+            title: deviceName,
             ip,
             exp: refreshDecode.exp
         });
@@ -109,7 +109,7 @@ export const authService = {
 
             await authRepository.updateDeviceSession({
                 deviceId,
-                iat: newRefreshDecoded.iat!,
+                lastActiveDate: newRefreshDecoded.iat!,
                 exp: newRefreshDecoded.exp!,
             });
 

@@ -33,7 +33,7 @@ authRouter.post('/login', requestLoggerMiddleware, validateAuthInput, handleVali
     }
     res.cookie('refreshToken', authResult.refreshToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
     });
     return res.status(200).json({ accessToken: authResult.accessToken });
 });
@@ -120,7 +120,7 @@ authRouter.post('/refresh-token', validateRefreshToken, async (req: Request, res
 
             res.cookie('refreshToken', tokens.refreshToken, {
                 httpOnly: true,
-                secure: true,
+                secure: process.env.NODE_ENV === 'production',
             });
 
             return res.status(200).json({ accessToken: tokens.accessToken });
@@ -140,8 +140,7 @@ authRouter.post('/logout',validateRefreshToken, async (req: Request, res: Respon
             }
             res.clearCookie('refreshToken', {
                 httpOnly: true,
-                secure: true,
-                sameSite: 'strict'
+                secure: process.env.NODE_ENV === 'production',
             });
 
             return res.sendStatus(204);

@@ -46,8 +46,8 @@ export const authRepository = {
     async createDeviceSession(sessionData: {
         userId: string;
         deviceId: string;
-        iat?: number;
-        deviceName: string;
+        lastActiveDate?: number;
+        title: string;
         ip: string;
         exp?: number;
     }): Promise<boolean> {
@@ -71,13 +71,13 @@ export const authRepository = {
     },
     async updateDeviceSession(sessionData: {
         deviceId: string;
-        iat: number;  // Unix timestamp (секунды)
+        lastActiveDate: number;  // Unix timestamp (секунды)
         exp: number;  // Unix timestamp (секунды)
     }): Promise<boolean> {
         try {
             const updateFields: any = {
                 $set: {
-                    iat: sessionData.iat,
+                    lastActiveDate: sessionData.lastActiveDate,
                     exp: sessionData.exp,
                 }
             };

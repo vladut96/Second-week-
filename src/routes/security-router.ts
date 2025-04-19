@@ -41,7 +41,7 @@ securityRouter.delete('/devices', validateRefreshToken, async (req: Request, res
         return res.status(500).json({ message: "Internal server error" });
     }
 });
-securityRouter.delete('devices/:deviceId', validateRefreshToken, async (req: Request, res: Response) => {
+securityRouter.delete('/devices/:deviceId', validateRefreshToken, async (req: Request, res: Response) => {
     const { userId } = req.context!;
     const deviceId = req.params.deviceId;
 

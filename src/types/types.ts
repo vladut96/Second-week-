@@ -98,7 +98,7 @@ export interface DeviceAuthSession {
     userId: string;
     deviceId: string;
     iat?: number;
-    deviceName: string;
+    title: string;
     ip: string;
     exp?: number;
 }
