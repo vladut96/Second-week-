@@ -141,6 +141,7 @@ authRouter.post('/logout',validateRefreshToken, async (req: Request, res: Respon
             res.clearCookie('refreshToken', {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
             });
 
             return res.sendStatus(204);

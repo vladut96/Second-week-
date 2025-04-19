@@ -5,36 +5,39 @@ import { subSeconds } from 'date-fns';
 export const requestLoggerMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const requestLogsCollection = getRequestLogsCollection();
+        const ip = req.ip || req.socket.remoteAddress;
 
-        // Логируем запрос
+        // Log the request
         await requestLogsCollection.insertOne({
-            // @ts-ignore
-            IP: req.ip,
+            IP: ip,
             URL: req.originalUrl,
+            method: req.method,
             date: new Date()
         });
 
-        // Проверяем количество запросов за последние 10 секунд
+        // Check request count in last 10 seconds
         const tenSecondsAgo = subSeconds(new Date(), 10);
         const requestCount = await requestLogsCollection.countDocuments({
-            IP: req.ip,
-            URL: req.originalUrl,
+            IP: ip,
             date: { $gte: tenSecondsAgo }
         });
 
-        // Если больше 5 запросов за 10 секунд - возвращаем ошибку
+        // Apply rate limiting
         if (requestCount > 5) {
+            // Set Retry-After header
+            res.set('Retry-After', '10');
             return res.status(429).json({
                 errorsMessages: [{
-                    message: 'Too many requests',
+                    message: 'Too many requests, please try again later',
                     field: 'rate limit'
                 }]
             });
         }
 
-         return next();
+        return next();
     } catch (error) {
         console.error('Request logging error:', error);
-        next();
+        // Continue processing even if logging fails
+        return next();
     }
 };
