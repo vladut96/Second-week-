@@ -97,7 +97,7 @@ export interface RequestLog {
 export interface DeviceAuthSession {
     userId: string;
     deviceId: string;
-    iat?: number;
+    lastActiveDate?: number;
     title: string;
     ip: string;
     exp?: number;

@@ -56,7 +56,7 @@ export const validateRefreshToken = async (req: Request, res: Response, next: Ne
         // Получаем сессию с проверкой iat
         const activeSession = await authRepository.findSessionByDeviceId(decoded.deviceId);
 
-        if (!activeSession || activeSession.iat !== decoded.iat)
+        if (!activeSession || activeSession.lastActiveDate !== decoded.iat)
         {
 
             return res.sendStatus(401);
