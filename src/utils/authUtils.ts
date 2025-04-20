@@ -3,8 +3,8 @@ import { add } from 'date-fns';
 import { randomUUID } from 'crypto';
 
 export const generateTokens = (user: { _id: any; email: string; login: string }, deviceId: string) => {
-    const accessTokenExpiresIn = '10m'; // 10 минут
-    const refreshTokenExpiresIn = '7d'; // 7 дней
+    const accessTokenExpiresIn = '10s';
+    const refreshTokenExpiresIn = '20s';
 
     const accessToken = jwt.sign(
         {

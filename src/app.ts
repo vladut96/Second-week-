@@ -14,6 +14,7 @@ export const app = express()
 app.use(express.json()) // создание свойств-объектов body и query во всех реквестах
 app.use(cookieParser())
 app.use(cors())
+app.set('trust proxy', true);
 
 app.get('/', (req, res) => {
     res.status(200).json({version: '1.0'})
