@@ -112,6 +112,7 @@ authRouter.get('/me', authenticateToken, (req: Request, res: Response) => {
 });
 authRouter.post('/refresh-token', validateRefreshToken, async (req: Request, res: Response) => {
         try {
+            console.log(req.context);
             const {userId, deviceId} = req.context!;
 
             const tokens = await authService.refreshTokenPair(userId, deviceId);
@@ -132,6 +133,7 @@ authRouter.post('/refresh-token', validateRefreshToken, async (req: Request, res
     });
 authRouter.post('/logout',validateRefreshToken, async (req: Request, res: Response) => {
         try {
+            console.log(req.context);
              const {  userId, deviceId } = req.context!;
 
             const logoutResult = await authService.logout( userId, deviceId);

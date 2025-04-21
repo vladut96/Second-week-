@@ -55,7 +55,7 @@ export const authRepository = {
     async findSessionByDeviceId(deviceId: string): Promise<DeviceAuthSession | null> {
         return getDevicesCollection().findOne({ deviceId });
     },
-    async deleteDeviceSession(deviceId: string, userId: string): Promise<boolean> {
+    async deleteDeviceSession(userId: string, deviceId: string): Promise<boolean> {
         const result = await getDevicesCollection().deleteOne({
             deviceId,
             userId

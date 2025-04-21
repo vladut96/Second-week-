@@ -4,8 +4,8 @@ import { validateRefreshToken} from "../validation/authTokenMiddleware";
 export const securityRouter = Router();
 
 securityRouter.get('/devices', validateRefreshToken, async (req: Request, res: Response) => {
+    console.log(req.context);
     const { userId } = req.context!;
-
     try {
         const sessions = await getDevicesCollection()
             .find({ userId })
