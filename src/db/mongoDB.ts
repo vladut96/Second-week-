@@ -3,10 +3,11 @@ import * as dotenv from 'dotenv';
 import {
     BlogInputModel,
     CommentatorInfo,
-    CommentViewModel, DeviceAuthSession, EmailConfirmation,
+    CommentViewModel, DeviceAuthSession,
     PostInputModel, RefreshTokenModel,
     RegisterUserDB, RequestLog
 } from "../types/types";
+import {EmailConfirmation} from "../../service/email-confirmation-code-generator";
 
 dotenv.config();
 

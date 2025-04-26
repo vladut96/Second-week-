@@ -1,6 +1,7 @@
 import { getUsersCollection } from '../db/mongoDB';
 import { ObjectId } from 'mongodb';
 import { Paginator, RegisterUserDB, UserViewModel} from '../types/types';
+import {EmailConfirmation} from "../../service/email-confirmation-code-generator";
 
 export const usersRepository = {
     async getUsers({ searchLoginTerm, searchEmailTerm, sortBy, sortDirection, pageNumber, pageSize }:
@@ -57,14 +58,18 @@ export const usersRepository = {
         };
     },
 
-    async createUser(user: RegisterUserDB<any>): Promise<UserViewModel> {
+    async createUser(user: RegisterUserDB<EmailConfirmation>): Promise<UserViewModel> {
 
         const newUser = {
             login: user.login,
             email: user.email,
             passwordHash: user.passwordHash,
             createdAt: new Date().toISOString(),
-            emailConfirmation: user.emailConfirmation
+            emailConfirmation: user.emailConfirmation,
+            passwordRecovery: {
+                recoveryCode:  null,
+                expirationDate:  null
+            }
         };
         const result = await getUsersCollection().insertOne(newUser);
         return {

@@ -1,6 +1,7 @@
 import {getDevicesCollection, getUsersCollection} from '../db/mongoDB';
-import {DeviceAuthSession, EmailConfirmation, RegisterUserDB, UserAuthModel} from '../types/types';
+import {DeviceAuthSession, RegisterUserDB, UserAuthModel} from '../types/types';
 import {ObjectId} from "mongodb";
+import {EmailConfirmation} from "../../service/email-confirmation-code-generator";
 
 
 export const authRepository = {
@@ -62,11 +63,7 @@ export const authRepository = {
         });
         return result.deletedCount === 1;
     },
-    async updateDeviceSession(sessionData: {
-        deviceId: string;
-        lastActiveDate: string;  // Unix timestamp (секунды)
-        exp: string;  // Unix timestamp (секунды)
-    }): Promise<boolean> {
+    async updateDeviceSession(sessionData: { deviceId: string; lastActiveDate: string; exp: string; }): Promise<boolean> {
         try {
             const updateFields: any = {
                 $set: {
@@ -97,4 +94,38 @@ export const authRepository = {
         );
         return result.modifiedCount === 1;
     },
+    async findUserByEmail(email: string): Promise<RegisterUserDB<EmailConfirmation> | null> {
+        return getUsersCollection().findOne({ email });
+    },
+
+    async setPasswordRecoveryCode(email: string, recoveryCode: string, expirationDate: Date): Promise<boolean> {
+        const result = await getUsersCollection().updateOne(
+            { email },
+            {
+                $set: {
+                    'passwordRecovery.recoveryCode': recoveryCode,
+                    'passwordRecovery.expirationDate': expirationDate
+                }
+            }
+        );
+        return result.modifiedCount === 1;
+    },
+
+    async findUserByRecoveryCode(recoveryCode: string): Promise<RegisterUserDB<EmailConfirmation> | null> {
+        return getUsersCollection().findOne({
+            'passwordRecovery.recoveryCode': recoveryCode
+        });
+    },
+
+    async updateUserPassword(email: string, newPasswordHash: string): Promise<boolean> {
+        const result = await getUsersCollection().updateOne(
+            { email },
+            {
+                $set: {
+                    passwordHash: newPasswordHash,
+                }
+            }
+        );
+        return result.modifiedCount === 1;
+    }
 };

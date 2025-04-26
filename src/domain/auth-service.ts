@@ -2,10 +2,11 @@ import { authRepository } from '../Repository/authRepository';
 import { comparePasswords, hashPassword } from '../utils/passwordUtils';
 import { usersRepository } from "../Repository/usersRepository";
 import { nodemailerService } from "../utils/nodemailerService";
-import { generateTokens, createEmailConfirmation } from '../utils/authUtils';
-import {EmailConfirmation, FieldError, RegisterUserDB, UserInputModel} from "../types/types";
+import { generateTokens } from '../utils/authUtils';
+import {FieldError, RegisterUserDB, UserInputModel} from "../types/types";
 import {randomUUID} from "crypto";
 import jwt, {JwtPayload} from "jsonwebtoken";
+import {EmailConfirmation, EmailConfirmationFactory} from "../../service/email-confirmation-code-generator";
 
 export const authService = {
     async authenticateUser(loginOrEmail: string, password: string, deviceName: string, ip: string) {
@@ -44,10 +45,18 @@ export const authService = {
             login,
             email,
             passwordHash: await hashPassword(password),
-            emailConfirmation: createEmailConfirmation()
+            emailConfirmation: EmailConfirmationFactory.create(),
+            passwordRecovery: {
+                recoveryCode:  null,
+                expirationDate:  null
+            }
         };
 
         await usersRepository.createUser(newUser);
+
+        if (!newUser.emailConfirmation.confirmationCode) {
+            throw new Error('Confirmation code is missing.');
+        }
 
         try {
             await nodemailerService.sendEmail(
@@ -63,7 +72,7 @@ export const authService = {
     },
     async confirmEmail(code: string) {
         const user = await authRepository.findByConfirmationCode(code);
-        if (!user || user.emailConfirmation.isConfirmed || new Date() > user.emailConfirmation.expirationDate) {
+        if (!user || user.emailConfirmation.isConfirmed || new Date() > user.emailConfirmation.expirationDate!) {
             console.log(`Confirmation failed for code ${code}`);
             return false;
         }
@@ -74,11 +83,12 @@ export const authService = {
         if (!user) return { success: false, reason: "email" };
         if (user.emailConfirmation.isConfirmed) return { success: false, reason: "confirmed" };
 
-        const newConfirmation = createEmailConfirmation();
+        const newConfirmation = EmailConfirmationFactory.create();
+
         const updated = await authRepository.updateConfirmationCode(
             email,
-            newConfirmation.confirmationCode,
-            newConfirmation.expirationDate
+            newConfirmation.confirmationCode!,
+            newConfirmation.expirationDate!
         );
 
         if (!updated) return { success: false, reason: "update_failed" };
@@ -86,7 +96,7 @@ export const authService = {
         try {
             await nodemailerService.sendEmail(
                 email,
-                newConfirmation.confirmationCode,
+                newConfirmation.confirmationCode!,
                 nodemailerService.emailTemplates.registrationEmail
             );
             return { success: true };
@@ -95,6 +105,44 @@ export const authService = {
             return { success: false, reason: "email_send_failed" };
         }
     },
+    async requestPasswordRecovery(email: string): Promise<boolean> {
+        const user = await authRepository.findUserByEmail(email);
+        if (!user) return true; // Return true even if email doesn't exist for security
+
+        const recoveryCode = randomUUID();
+        const expirationDate = new Date(Date.now() + 3600000); // 1 hour expiration
+
+        const updated = await authRepository.setPasswordRecoveryCode(
+            email,
+            recoveryCode,
+            expirationDate
+        );
+
+        if (updated) {
+            try {
+                await nodemailerService.sendEmail(
+                    email,
+                    recoveryCode,
+                    nodemailerService.emailTemplates.passwordRecoveryEmail
+                );
+                return true;
+            } catch (error) {
+                console.error('Password recovery email sending failed:', error);
+                return false;
+            }
+        }
+        return false;
+    },
+    async confirmPasswordRecovery(recoveryCode: string, newPassword: string): Promise<boolean> {
+        const user = await authRepository.findUserByRecoveryCode(recoveryCode);
+        if (!user || !user.passwordRecovery || new Date() > user.passwordRecovery.expirationDate!) {
+            return false;
+        }
+
+        const passwordHash = await hashPassword(newPassword);
+        return authRepository.updateUserPassword(user.email, passwordHash);
+    },
+
     async refreshTokenPair(userId: string, deviceId: string) {
         try {
             const user = await authRepository.getUserById(userId);
@@ -127,5 +175,5 @@ export const authService = {
             console.error('Logout service error:', error);
             return false;
         }
-    }
+    },
 };

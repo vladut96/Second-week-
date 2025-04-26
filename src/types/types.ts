@@ -57,21 +57,16 @@ export interface UserAuthModel  {
     email: string;
     passwordHash: string;
 }
-export type UserPublicModel = Omit<UserAuthModel, 'passwordHash'>;
-
+export interface PasswordRecovery {
+    recoveryCode: string | null;
+    expirationDate: Date | null;
+}
 export interface RegisterUserDB<T> {
     login: string;
     email: string;
     passwordHash: string;
     emailConfirmation: T;
-}
-export interface EmailConfirmation {
-    confirmationCode: string;
-    expirationDate: Date;
-    isConfirmed: boolean;
-}
-export interface CommentInputModel  {
-    content: string;
+    passwordRecovery: PasswordRecovery;
 }
 export interface CommentViewModel<T>  {
     id: string;

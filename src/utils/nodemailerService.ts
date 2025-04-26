@@ -72,5 +72,26 @@ export const nodemailerService = {
         `,
             text: `Thank you for your registration!\n\nTo complete your registration, please visit:\nhttps://somesite.com/confirm-email?code={{code}}\n\nThis link will expire in 1 hour.`
         },
+        passwordRecoveryEmail: {
+            subject: 'Password Recovery',
+            html: `
+        <h1>Password recovery</h1>
+        <p>To finish password recovery please follow the link below:</p>
+        <a href="https://somesite.com/password-recovery?recoveryCode={{code}}"
+           style="display: inline-block; padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 5px;">
+           Recover Password
+        </a>
+        <p>If the button doesn't work, copy and paste this link into your browser:</p>
+        <p>https://somesite.com/password-recovery?recoveryCode={{code}}</p>
+    `,
+            text: `
+        Password recovery
+
+        To finish password recovery please follow the link below:
+        https://somesite.com/password-recovery?recoveryCode={{code}}
+
+        If the link doesn't work, copy and paste it into your browser.
+    `
+        }
     }
 };

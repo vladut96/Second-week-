@@ -30,9 +30,3 @@ export const generateTokens = (user: { _id: any; email: string; login: string },
         refreshToken
     };
 };
-
-export const createEmailConfirmation = () => ({
-    confirmationCode: randomUUID(),
-    expirationDate: add(new Date(), { hours: 1, minutes: 30 }),
-    isConfirmed: false
-});

@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { UAParser } from 'ua-parser-js';
 import {authService} from '../domain/auth-service';
 import { validateAuthInput, handleValidationErrors, validateUserInput,
-    validateRegistrationCode, registrationEmailResendingValidator
+    validateRegistrationCode, validateEmail
 } from '../validation/express-validator';
 import {authenticateToken, validateRefreshToken} from "../validation/authTokenMiddleware";
 import { MeViewModel, UserInputModel } from "../types/types";
@@ -38,6 +38,59 @@ authRouter.post('/login', requestLoggerMiddleware,  validateAuthInput, handleVal
     });
     return res.status(200).json({ accessToken: authResult.accessToken });
 });
+authRouter.post('/password-recovery', requestLoggerMiddleware, validateEmail, handleValidationErrors, async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    try {
+        await authService.requestPasswordRecovery(email);
+        return res.sendStatus(204);
+    } catch (error) {
+        console.error('Password recovery error:', error);
+        return res.sendStatus(500);
+    }
+})
+authRouter.post('/new-password', requestLoggerMiddleware, async (req: Request, res: Response) => {
+    const { newPassword, recoveryCode } = req.body;
+
+    // Basic validation
+    if (!newPassword || newPassword.length < 6 || newPassword.length > 20) {
+        return res.status(400).json({
+            errorsMessages: [{
+                message: "Password must be between 6 and 20 characters",
+                field: "newPassword"
+            }]
+        });
+    }
+
+    if (!recoveryCode) {
+        return res.status(400).json({
+            errorsMessages: [{
+                message: "Recovery code is required",
+                field: "recoveryCode"
+            }]
+        });
+    }
+
+    try {
+        const success = await authService.confirmPasswordRecovery(recoveryCode, newPassword);
+        if (success) {
+            return res.sendStatus(204);
+        } else {
+            return res.status(400).json({
+                errorsMessages: [{
+                    message: "Recovery code is incorrect or expired",
+                    field: "recoveryCode"
+                }]
+            });
+        }
+    } catch (error) {
+        console.error('Password recovery confirmation error:', error);
+        return res.sendStatus(500);
+    }
+})
+
+
+
 authRouter.post('/registration', requestLoggerMiddleware, validateUserInput, handleValidationErrors, async (req: Request, res: Response) => {
         const userData: UserInputModel = req.body;
         const result = await authService.registerUser(userData);
@@ -74,7 +127,7 @@ authRouter.post('/registration-confirmation', requestLoggerMiddleware, validateR
             });
         }
     });
-authRouter.post('/registration-email-resending', requestLoggerMiddleware, registrationEmailResendingValidator, handleValidationErrors,async (req: Request, res: Response) => {
+authRouter.post('/registration-email-resending', requestLoggerMiddleware, validateEmail, handleValidationErrors,async (req: Request, res: Response) => {
         const { email } = req.body;
 
     const result = await authService.resendConfirmationEmail(email);

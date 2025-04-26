@@ -115,7 +115,7 @@ export const validateRegistrationCode = [
         .bail()
         .isString().withMessage('Registration code must be a string'),
 ];
-export const registrationEmailResendingValidator = [
+export const validateEmail = [
     body('email')
         .notEmpty().withMessage('Email is required')
         .bail()
