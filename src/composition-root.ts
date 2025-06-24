@@ -31,7 +31,7 @@ container.bind<PostsQueryRepository>(PostsQueryRepository).toSelf().inSingletonS
 container.bind<CommentsRepository>(CommentsRepository).toSelf().inSingletonScope();
 
 // Регистрируем сервисы
-container.bind<UsersService>(UsersService).toSelf().inSingletonScope();
+container.bind<UsersService>(UsersService).to(UsersService).inSingletonScope();
 container.bind<AuthService>(AuthService).toSelf().inSingletonScope();
 container.bind<BlogService>(BlogService).toSelf().inSingletonScope();
 container.bind<BlogQueryService>(BlogQueryService).toSelf().inSingletonScope();

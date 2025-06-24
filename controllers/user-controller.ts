@@ -1,10 +1,12 @@
 import {UsersService} from "../src/domain/users-service";
 import {Request, Response} from "express";
 import {UserInputModel} from "../src/types/types";
+import {inject, injectable} from "inversify";
 
+@injectable()
 export class UserController {
 
-    constructor(protected usersService: UsersService) {
+    constructor( protected usersService: UsersService) {
     }
 
     async getUsers(req: Request, res: Response) {

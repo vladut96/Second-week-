@@ -1,6 +1,7 @@
 import { PostModel } from "../db/models";
 import { PostData, PostInputModel, PostViewModel, Paginator } from "../types/types";
 import { Types } from "mongoose";
+import { injectable } from "inversify";
 
 const mapToViewModel = (post: any): PostViewModel => {
     return {
@@ -14,6 +15,7 @@ const mapToViewModel = (post: any): PostViewModel => {
     };
 };
 
+@injectable()
 export class PostsRepository {
     async createPost(postData: PostData): Promise<PostViewModel> {
         const { title, shortDescription, content, blogId, blogName } = postData;
@@ -50,6 +52,7 @@ export class PostsRepository {
     }
 }
 
+@injectable()
 export class PostsQueryRepository {
     async getPosts({
                        sortBy,

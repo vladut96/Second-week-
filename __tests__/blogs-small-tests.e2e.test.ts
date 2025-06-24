@@ -21,8 +21,6 @@ let newRefreshToken: string;
 describe('/blogs', () => {
     beforeAll(async () => {
         await runDb(process.env.MONGO_URL!);
-        ///const blogsCollection = getBlogsCollection();
-        ///await blogsCollection.deleteMany({});
         await req.delete('/testing/all-data');
     });
 
