@@ -1,102 +1,15 @@
-import {Request, Response, Router} from "express";
+import {Router} from "express";
 import {handleValidationErrors, validateComment, validatePostInput} from "../validation/express-validator";
 import {basicAuthMiddleware} from "../validation/basicAuthMiddleware";
-import {postsQueryService, postsService} from "../domain/posts-service";
-import {commentsService} from "../domain/comments-service";
 import {authenticateToken} from "../validation/authTokenMiddleware";
+import {postsController} from "../composition-root";
+
 export const postsRouter = Router();
 
-postsRouter.get("/:postId/comments", async (req, res) => {
-    const { postId } = req.params;
-    const pageNumber = parseInt(req.query.pageNumber as string, 10) || 1;
-    const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
-    const sortBy = (req.query.sortBy as string) || "createdAt";
-    const sortDirection = req.query.sortDirection === "asc" ? 1 : -1;
-
-    const postExists = await postsQueryService.getPostById(postId);
-    if (!postExists) {
-        return res.sendStatus(404);
-    }
-    const comments = await commentsService.getCommentsByPostId({
-        postId,
-        pageNumber,
-        pageSize,
-        sortBy,
-        sortDirection
-    });
-    return res.status(200).json(comments);
-
-});
-postsRouter.post("/:postId/comments", authenticateToken, validateComment, handleValidationErrors, async (req: Request, res: Response) => {
-    const { postId } = req.params;
-    const { content } = req.body;
-    const userId = req.user!.userId;
-    const userLogin = req.user!.login;
-
-    const postExists = await postsQueryService.getPostById(postId);
-    if (!postExists) {
-        return res.sendStatus(404);
-    }
-
-    const newComment = await commentsService.createComment({
-        postId,
-        content,
-        userId,
-        // @ts-ignore
-        userLogin
-    });
-    return res.status(201).json(newComment);
-});
-postsRouter.get('/', async (req: Request, res: Response) => {
-    const sortBy = (req.query.sortBy as string) || 'createdAt';
-    const sortDirection = req.query.sortDirection === 'asc' ? 1 : -1;
-    const pageNumber = parseInt(req.query.pageNumber as string, 10) || 1;
-    const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
-
-    const posts = await postsQueryService.getPosts({ sortBy, sortDirection, pageNumber, pageSize });
-    res.status(200).json(posts);
-});
-postsRouter.get('/:id', async (req: Request , res: Response) => {
-    const postId = req.params.id;
-    const foundPost = await postsQueryService.getPostById(postId);
-
-    if (!foundPost) {
-        return res.sendStatus(404);
-    }
-    return res.status(200).json(foundPost);
-});
-postsRouter.post('/', basicAuthMiddleware, validatePostInput, handleValidationErrors, async (req: Request, res: Response) => {
-    try {
-        const { title, shortDescription, content, blogId } = req.body;
-        const newPost = await postsService.createPost({ title, shortDescription, content, blogId });
-        return res.status(201).json(newPost);
-    } catch (error) {
-        const err = error as Error; // Type assertion
-        if (err.message === 'Blog not found') {
-            return res.status(404).json({ message: 'Blog not found' });
-        }
-        return res.status(500).json({ message: 'Internal Server Error' });
-    }
-});
-postsRouter.put('/:id', basicAuthMiddleware, validatePostInput, handleValidationErrors, async (req: Request, res: Response) => {
-        const { id } = req.params;
-        const { title, shortDescription, content, blogId } = req.body;
-        const isUpdated = await postsService.updatePost(id, {
-            title,
-            shortDescription,
-            content,
-            blogId
-        });
-        if (!isUpdated) {
-            return res.status(404).json({ message: 'Blog not found' }); // Preserve original message
-        }
-        return res.sendStatus(204);
-    });
-postsRouter.delete("/:id", basicAuthMiddleware, async (req: Request, res: Response) => {
-    const postId = req.params.id;
-    const isDeleted = await postsService.deletePostById(postId);
-    if (!isDeleted) {
-        return res.sendStatus(404);
-    }
-    return res.sendStatus(204);
-});
+postsRouter.get("/:postId/comments", postsController.getPostsComments.bind(postsController) );
+postsRouter.post("/:postId/comments", authenticateToken, validateComment, handleValidationErrors, postsController.createPostsComments.bind(postsController) );
+postsRouter.get('/', postsController.getPosts.bind(postsController) );
+postsRouter.get('/:id', postsController.getPostsById.bind(postsController) );
+postsRouter.post('/', basicAuthMiddleware, validatePostInput, handleValidationErrors, postsController.createPost.bind(postsController) );
+postsRouter.put('/:id', basicAuthMiddleware, validatePostInput, handleValidationErrors, postsController.updatePost.bind(postsController) );
+postsRouter.delete("/:id", basicAuthMiddleware, postsController.deletePostById.bind(postsController));

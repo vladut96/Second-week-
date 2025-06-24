@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, {JwtPayload} from 'jsonwebtoken';
 import dotenv from 'dotenv';
-import {authRepository} from "../Repository/authRepository";
+import { authRepository } from "../composition-root";
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -55,7 +55,6 @@ export const validateRefreshToken = async (req: Request, res: Response, next: Ne
         const activeSession = await authRepository.findSessionByDeviceId(decoded.deviceId);
         if (!activeSession || !activeSession.lastActiveDate) return res.sendStatus(401);
 
-        // 👇 Сравнение по iat в секундах
         const sessionIat = Math.floor(new Date(activeSession.lastActiveDate).getTime() / 1000);
         if (sessionIat !== decoded.iat) return res.sendStatus(401);
 

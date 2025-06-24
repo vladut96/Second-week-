@@ -121,26 +121,24 @@ describe('/blogs', () => {
     it('POST should NOT create a new blog with invalid data', async () => {
         const validCredentials = Buffer.from('admin:qwerty').toString('base64');
 
-        const newBlog = {
-            name: 'Correct Name',
-            description: '',
-            websiteUrl: '',
-        };
-
         const res = await req
             .post('/blogs')
             .set('Authorization', `Basic ${validCredentials}`)
-            .send(newBlog)
+            .send({
+                name: 'Vladyslav',
+                description: '',
+                websiteUrl: '',
+            })
             .expect(400);
         expect(res.body).toEqual({
             errorsMessages: [
                 {
-                    message: expect.any(String), // Сообщение об ошибке
-                    field: 'description', // Поле, в котором ошибка
+                    message: expect.any(String),
+                    field: 'description',
                 },
                 {
-                    message: expect.any(String), // Сообщение об ошибке
-                    field: 'websiteUrl', // Поле, в котором ошибка
+                    message: expect.any(String),
+                    field: 'websiteUrl',
                 },
             ],
         });
@@ -344,7 +342,6 @@ describe('/blogs', () => {
             .delete(`/blogs/${createdBlogForTestingDelete.id}`)
             .expect(401);
     });
-
    ///POSTS
     it('POST Should create a post with valid data', async () => {
         const validCredentials = Buffer.from('admin:qwerty').toString('base64');
@@ -595,7 +592,6 @@ describe('/blogs', () => {
             .delete(`/posts/${createdPostForTestingDelete.id}`)
             .expect(401);
     });
-
     ///USERS
     it('POST should create a new user with valid data 1', async () => {
         const validCredentials = Buffer.from('admin:qwerty').toString('base64');
@@ -841,7 +837,6 @@ describe('/blogs', () => {
             .expect(401);
     });
     ///COMMENTS
-
     it('GET /posts/{postId}/comments should return comments for specified post', async () => {
         const res = await req
             .get(`/posts/${createdPost.id}/comments`)
@@ -941,9 +936,7 @@ describe('/blogs', () => {
             .send(newComment)
             .expect(401);
     });
-
     ///AUTH
-
         it('POST /auth/login should return 200 and JWT tokens for valid credentials', async () => {
 
             const res = await req
@@ -1017,27 +1010,23 @@ describe('/blogs', () => {
         expect(newRefreshToken).not.toBe(refreshToken);
 
     });
-
     it('should return 401 when using old refresh token (should be revoked)', async () => {
         await req
             .post('/auth/refresh-token')
             .set('Cookie', [`refreshToken=${refreshToken}`])
             .expect(401);
     });
-
     it('should return 401 when using invalid refresh token', async () => {
         await req
             .post('/auth/refresh-token')
             .set('Cookie', ['refreshToken=invalidtoken123'])
             .expect(401);
     });
-
     it('should return 401 when no refresh token provided', async () => {
         await req
             .post('/auth/refresh-token')
             .expect(401);
     });
-
     it('should return new tokens with proper expiration', async () => {
         const res = await req
             .post('/auth/refresh-token')

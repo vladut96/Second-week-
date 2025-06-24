@@ -1,10 +1,10 @@
+import { PostModel } from "../db/models";
 import { PostData, PostInputModel, PostViewModel, Paginator } from "../types/types";
-import { getPostsCollection } from "../db/mongoDB";
-import { ObjectId } from "mongodb";
+import { Types } from "mongoose";
 
 const mapToViewModel = (post: any): PostViewModel => {
     return {
-        id: post._id.toString(), // ✅ Convert `_id` to string
+        id: post._id.toString(),
         title: post.title,
         shortDescription: post.shortDescription,
         content: post.content,
@@ -14,38 +14,43 @@ const mapToViewModel = (post: any): PostViewModel => {
     };
 };
 
-export const postsRepository = {
+export class PostsRepository {
     async createPost(postData: PostData): Promise<PostViewModel> {
         const { title, shortDescription, content, blogId, blogName } = postData;
 
-        const newPost = {
+        const newPost = new PostModel({
             title,
             shortDescription,
             content,
             blogId,
             blogName,
             createdAt: new Date().toISOString(),
-        };
+        });
 
-        const result = await getPostsCollection().insertOne(newPost);
-        return mapToViewModel({ ...newPost, _id: result.insertedId });
-    },
+        await newPost.save();
+        return mapToViewModel(newPost.toObject());
+    }
 
     async updatePost(id: string, updateData: PostInputModel): Promise<boolean> {
-        const result = await getPostsCollection().updateOne(
-            { _id: new ObjectId(id) },
+        if (!Types.ObjectId.isValid(id)) return false;
+
+        const result = await PostModel.updateOne(
+            { _id: id },
             { $set: updateData }
-        );
+        ).exec();
+
         return result.matchedCount > 0;
-    },
+    }
 
     async deletePostById(postId: string): Promise<boolean> {
-        const result = await getPostsCollection().deleteOne({ _id: new ObjectId(postId) });
-        return result.deletedCount > 0;
-    },
-};
+        if (!Types.ObjectId.isValid(postId)) return false;
 
-export const postsQueryRepository = {
+        const result = await PostModel.deleteOne({ _id: postId }).exec();
+        return result.deletedCount > 0;
+    }
+}
+
+export class PostsQueryRepository {
     async getPosts({
                        sortBy,
                        sortDirection,
@@ -58,16 +63,14 @@ export const postsQueryRepository = {
         pageSize: number;
     }): Promise<Paginator<PostViewModel>> {
         const skip = (pageNumber - 1) * pageSize;
-        const limit = pageSize;
+        const totalCount = await PostModel.countDocuments({});
 
-        const totalCount = await getPostsCollection().countDocuments({});
-
-        const posts = await getPostsCollection()
+        const posts = await PostModel
             .find({})
             .sort({ [sortBy]: sortDirection })
             .skip(skip)
-            .limit(limit)
-            .toArray();
+            .limit(pageSize)
+            .lean();
 
         return {
             pagesCount: Math.ceil(totalCount / pageSize),
@@ -76,12 +79,14 @@ export const postsQueryRepository = {
             totalCount,
             items: posts.map(mapToViewModel),
         };
-    },
+    }
 
     async getPostById(postId: string): Promise<PostViewModel | null> {
-        const post = await getPostsCollection().findOne({ _id: new ObjectId(postId) });
+        if (!Types.ObjectId.isValid(postId)) return null;
+
+        const post = await PostModel.findById(postId).lean();
         return post ? mapToViewModel(post) : null;
-    },
+    }
 
     async getPostsByBlogId(
         blogId: string,
@@ -90,17 +95,17 @@ export const postsQueryRepository = {
         skip: number,
         limit: number
     ): Promise<PostViewModel[]> {
-        const posts = await getPostsCollection()
+        const posts = await PostModel
             .find({ blogId })
             .sort({ [sortBy]: sortDirection })
             .skip(skip)
             .limit(limit)
-            .toArray();
+            .lean();
 
         return posts.map(mapToViewModel);
-    },
+    }
 
     async getTotalPostsCountByBlogId(blogId: string): Promise<number> {
-        return await getPostsCollection().countDocuments({ blogId });
-    },
-};
+        return PostModel.countDocuments({ blogId });
+    }
+}

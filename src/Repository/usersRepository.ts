@@ -1,16 +1,17 @@
-import { getUsersCollection } from '../db/mongoDB';
-import { ObjectId } from 'mongodb';
-import { Paginator, RegisterUserDB, UserViewModel} from '../types/types';
-import {EmailConfirmation} from "../../service/email-confirmation-code-generator";
+import { UserModel } from '../db/models';
+import { Paginator, RegisterUserDB, UserViewModel } from '../types/types';
+import { EmailConfirmation } from "../../service/email-confirmation-code-generator";
+import {injectable} from "inversify";
 
-export const usersRepository = {
+@injectable()
+export class UsersRepository {
     async getUsers({ searchLoginTerm, searchEmailTerm, sortBy, sortDirection, pageNumber, pageSize }:
                    { searchLoginTerm?: string; searchEmailTerm?: string; sortBy: string; sortDirection: 1 | -1; pageNumber: number; pageSize: number; }
     ): Promise<Paginator<UserViewModel>> {
         const filter: any = {};
 
         if (searchLoginTerm || searchEmailTerm) {
-            filter.$or = []; // Создаём массив условий
+            filter.$or = [];
 
             if (searchLoginTerm) {
                 filter.$or.push({ login: { $regex: searchLoginTerm, $options: 'i' } });
@@ -20,33 +21,31 @@ export const usersRepository = {
             }
         }
 
-        // ✅ Подсчёт количества записей для пагинации
-        const totalCount = await getUsersCollection().countDocuments(filter);
+        const totalCount = await UserModel.countDocuments(filter);
 
-        // ✅ Поиск пользователей с сортировкой и пагинацией
-        const users = await getUsersCollection()
+        const users = await UserModel
             .find(filter)
             .sort({ [sortBy]: sortDirection })
             .skip((pageNumber - 1) * pageSize)
             .limit(pageSize)
-            .toArray();
+            .lean();
 
         return {
             pagesCount: Math.ceil(totalCount / pageSize),
             page: pageNumber,
             pageSize,
             totalCount,
-            items: users.map((user: any): UserViewModel => ({
+            items: users.map((user): UserViewModel => ({
                 id: user._id.toString(),
                 login: user.login,
                 email: user.email,
-                createdAt: user.createdAt,
+                createdAt: user.createdAt|| 'unknown',
             })),
         };
-    },
+    }
 
     async getUserByLoginOrEmail(login: string, email: string): Promise<UserViewModel | null> {
-        const user: any = await getUsersCollection().findOne({ $or: [{ login }, { email }] });
+        const user = await UserModel.findOne({ $or: [{ login }, { email }] }).lean();
 
         if (!user) return null;
 
@@ -54,35 +53,35 @@ export const usersRepository = {
             id: user._id.toString(),
             login: user.login,
             email: user.email,
-            createdAt: user.createdAt // Convert Date to string if needed
+            createdAt: user.createdAt || 'unknown'
         };
-    },
+    }
 
     async createUser(user: RegisterUserDB<EmailConfirmation>): Promise<UserViewModel> {
-
-        const newUser = {
+        const newUser = new UserModel({
             login: user.login,
             email: user.email,
             passwordHash: user.passwordHash,
             createdAt: new Date().toISOString(),
             emailConfirmation: user.emailConfirmation,
             passwordRecovery: {
-                recoveryCode:  null,
-                expirationDate:  null
+                recoveryCode: null,
+                expirationDate: null
             }
-        };
-        const result = await getUsersCollection().insertOne(newUser);
+        });
+
+        await newUser.save();
+
         return {
-            id: result.insertedId.toString(),
+            id: newUser._id.toString(),
             login: newUser.login,
             email: newUser.email,
-            createdAt: newUser.createdAt,
+            createdAt: newUser.createdAt || 'unknown',
         };
-    },
+    }
 
     async deleteUserById(userId: string): Promise<boolean> {
-        if (!ObjectId.isValid(userId)) return false;
-        const result = await getUsersCollection().deleteOne({ _id: new ObjectId(userId) });
+        const result = await UserModel.deleteOne({ _id: userId });
         return result.deletedCount > 0;
     }
-};
+}

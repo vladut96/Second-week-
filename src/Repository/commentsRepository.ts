@@ -1,11 +1,14 @@
-import { getCommentsCollection } from "../db/mongoDB";
-import { ObjectId } from "mongodb";
-import {CommentatorInfo, CommentViewModel} from "../types/types";
+import { CommentModel } from "../db/models";
+import { CommentatorInfo, CommentViewModel } from "../types/types";
+import { Types } from "mongoose";
+import {injectable} from "inversify";
 
-export const commentsRepository = {
+@injectable()
+export class CommentsRepository {
     async getCommentById(commentId: string): Promise<CommentViewModel<CommentatorInfo> | null> {
-        const comment = await getCommentsCollection().findOne({ _id: new ObjectId(commentId) });
+        if (!Types.ObjectId.isValid(commentId)) return null;
 
+        const comment = await CommentModel.findById(commentId).lean();
         if (!comment) return null;
 
         return {
@@ -17,35 +20,48 @@ export const commentsRepository = {
             },
             createdAt: comment.createdAt,
         };
-    },
+    }
+
     async updateComment(commentId: string, content: string): Promise<boolean> {
-        const result = await getCommentsCollection().updateOne(
-            { _id: new ObjectId(commentId) },
+        if (!Types.ObjectId.isValid(commentId)) return false;
+
+        const result = await CommentModel.updateOne(
+            { _id: commentId },
             { $set: { content } }
-        );
+        ).exec();
 
         return result.matchedCount > 0;
-    },
+    }
+
     async deleteComment(commentId: string): Promise<boolean> {
-        const result = await getCommentsCollection().deleteOne({ _id: new ObjectId(commentId) });
+        if (!Types.ObjectId.isValid(commentId)) return false;
+
+        const result = await CommentModel.deleteOne({ _id: commentId }).exec();
         return result.deletedCount > 0;
-    },
-    async getCommentsByPostId({ postId, pageNumber, pageSize, sortBy, sortDirection }: {
+    }
+
+    async getCommentsByPostId({
+                                  postId,
+                                  pageNumber,
+                                  pageSize,
+                                  sortBy,
+                                  sortDirection
+                              }: {
         postId: string;
         pageNumber: number;
         pageSize: number;
         sortBy: string;
         sortDirection: 1 | -1;
     }) {
-        const filter = { id: postId };
-        const totalCount = await getCommentsCollection().countDocuments(filter);
+        const filter = { postId };
+        const totalCount = await CommentModel.countDocuments(filter);
 
-        const comments = await getCommentsCollection()
+        const comments = await CommentModel
             .find(filter)
             .sort({ [sortBy]: sortDirection })
             .skip((pageNumber - 1) * pageSize)
             .limit(pageSize)
-            .toArray();
+            .lean();
 
         return {
             pagesCount: Math.ceil(totalCount / pageSize),
@@ -62,28 +78,36 @@ export const commentsRepository = {
                 createdAt: comment.createdAt
             }))
         };
-    },
-    async createComment({ postId, content, userId, userLogin }: {
+    }
+
+    async createComment({
+                            postId,
+                            content,
+                            userId,
+                            userLogin
+                        }: {
         postId: string;
         content: string;
         userId: string;
         userLogin: string;
     }) {
-        const newComment : CommentViewModel<CommentatorInfo>  = {
-            id : postId,
+        const newComment = new CommentModel({
+            postId,
             content,
             commentatorInfo: {
                 userId,
                 userLogin
             },
             createdAt: new Date().toISOString()
-        };
-        const result = await getCommentsCollection().insertOne(newComment);
+        });
+
+        await newComment.save();
+
         return {
-            id: result.insertedId.toString(),
+            id: newComment._id.toString(),
             content: newComment.content,
             commentatorInfo: newComment.commentatorInfo,
             createdAt: newComment.createdAt
         };
     }
-};
+}

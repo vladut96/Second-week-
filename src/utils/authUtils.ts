@@ -1,6 +1,4 @@
 import jwt from 'jsonwebtoken';
-import { add } from 'date-fns';
-import { randomUUID } from 'crypto';
 
 export const generateTokens = (user: { _id: any; email: string; login: string }, deviceId: string) => {
     const accessTokenExpiresIn = '10s';

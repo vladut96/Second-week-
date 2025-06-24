@@ -125,7 +125,13 @@ export const validateEmail = [
         .bail()
         .withMessage('Email format is invalid'),
 ];
-
+export const validatePassword = [
+    body('newPassword')
+        .notEmpty().withMessage('New password is required')
+        .bail()
+        .isLength({ min : 6, max: 20 }).withMessage('Short description must be ≤100 characters')
+        .withMessage('Email format is invalid'),
+];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);

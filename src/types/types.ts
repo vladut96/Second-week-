@@ -65,8 +65,14 @@ export interface RegisterUserDB<T> {
     login: string;
     email: string;
     passwordHash: string;
+    createdAt?: string
     emailConfirmation: T;
     passwordRecovery: PasswordRecovery;
+}
+export interface EmailConfirmation {
+    confirmationCode: string | null;
+    expirationDate: Date | null;
+    isConfirmed: boolean;
 }
 export interface CommentViewModel<T>  {
     id: string;

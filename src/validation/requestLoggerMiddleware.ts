@@ -1,13 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import { getRequestLogsCollection } from '../db/mongoDB';
+import { RequestLogModel } from '../db/models';
 import { subSeconds } from 'date-fns';
 
 export const requestLoggerMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const requestLogsCollection = getRequestLogsCollection();
-
         // Логируем запрос
-        await requestLogsCollection.insertOne({
+        await RequestLogModel.create({
             IP: req.ip,
             URL: req.originalUrl,
             date: new Date()
@@ -15,7 +13,7 @@ export const requestLoggerMiddleware = async (req: Request, res: Response, next:
 
         // Проверяем количество запросов за последние 10 секунд
         const tenSecondsAgo = subSeconds(new Date(), 10);
-        const requestCount = await requestLogsCollection.countDocuments({
+        const requestCount = await RequestLogModel.countDocuments({
             IP: req.ip,
             URL: req.originalUrl,
             date: { $gte: tenSecondsAgo }
@@ -31,9 +29,9 @@ export const requestLoggerMiddleware = async (req: Request, res: Response, next:
             });
         }
 
-         return next();
+        return next();
     } catch (error) {
         console.error('Request logging error:', error);
-        next();
+        return next();
     }
 };

@@ -1,23 +1,19 @@
-import { blogsQueryRepository, blogsRepository } from "../Repository/blogsRepository";
-import { BlogInputModel, BlogViewModel, Paginator } from "../types/types";
+import {
+    BlogsQueryRepository,
+    BlogsRepository,
 
-export const blogsQueryService = {
-    async getBlogs({   searchNameTerm,
-                       sortBy,
-                       sortDirection,
-                       pageNumber,
-                       pageSize,
-                   }: {
-        searchNameTerm: string | null;
-        sortBy: string;
-        sortDirection: 1 | -1;
-        pageNumber: number;
-        pageSize: number;
-    }): Promise<Paginator<BlogViewModel>> {
+} from "../Repository/blogsRepository";
+import { BlogInputModel, BlogViewModel, Paginator } from "../types/types";
+import {inject, injectable} from "inversify";
+@injectable()
+export class BlogQueryService {
+    constructor(@inject(BlogsQueryRepository) private blogQueryRepository: BlogsQueryRepository) {
+    }
+    async getBlogs({ searchNameTerm, sortBy, sortDirection, pageNumber, pageSize}: { searchNameTerm: string | null; sortBy: string; sortDirection: 1 | -1; pageNumber: number; pageSize: number; }): Promise<Paginator<BlogViewModel>> {
         const skip = (pageNumber - 1) * pageSize;
         const limit = pageSize;
 
-        const blogs = await blogsQueryRepository.getBlogs({
+        const blogs = await this.blogQueryRepository.getBlogs({
             searchNameTerm,
             sortBy,
             sortDirection,
@@ -25,7 +21,7 @@ export const blogsQueryService = {
             limit,
         });
 
-        const totalCount = await blogsQueryRepository.getTotalBlogsCount(searchNameTerm);
+        const totalCount = await this.blogQueryRepository.getTotalBlogsCount(searchNameTerm);
         const pagesCount = Math.ceil(totalCount / pageSize);
 
         return {
@@ -35,20 +31,24 @@ export const blogsQueryService = {
             totalCount,
             items: blogs,
         };
-    },
+    }
     async getBlogById(id: string): Promise<BlogViewModel | null> {
-        return await blogsQueryRepository.getBlogById(id);
-    },
-};
+        return await this.blogQueryRepository.getBlogById(id);
+    }
 
-export const blogsService = {
+}
+@injectable()
+export class BlogService {
+    constructor(@inject(BlogsRepository) private blogsRepository: BlogsRepository) {
+    }
     async createBlog({ name, description, websiteUrl }: BlogInputModel): Promise<BlogViewModel> {
-        return await blogsRepository.createBlog({ name, description, websiteUrl });
-    },
+        return await this.blogsRepository.createBlog({ name, description, websiteUrl });
+    }
     async updateBlog(id: string, updateData: BlogInputModel): Promise<boolean> {
-        return await blogsRepository.updateBlog(id, updateData);
-    },
+        return await this.blogsRepository.updateBlog(id, updateData);
+    }
     async deleteBlogById(id: string): Promise<boolean> {
-        return await blogsRepository.deleteBlogById(id);
-    },
-};
+        return await this.blogsRepository.deleteBlogById(id);
+    }
+
+}

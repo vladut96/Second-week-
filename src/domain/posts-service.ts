@@ -1,58 +1,69 @@
-import {PostInputModel, Paginator, PostViewModel, PostData } from "../types/types";
-import {postsQueryRepository, postsRepository} from "../Repository/postsRepository";
-import {blogsQueryRepository} from "../Repository/blogsRepository";
+import {PostInputModel, Paginator, PostViewModel } from "../types/types";
+import { PostsQueryRepository, PostsRepository } from "../Repository/postsRepository";
+import {BlogsQueryRepository} from "../Repository/blogsRepository";
+import {injectable, inject} from "inversify";
 
-export const postsQueryService = {
-    async getPosts({   sortBy,
-                       sortDirection,
-                       pageNumber,
-                       pageSize
-                   }: {
-        sortBy: string;
-        sortDirection: 1 | -1;
-        pageNumber: number;
-        pageSize: number;
-    }): Promise<Paginator<PostViewModel>> {
-        return await postsQueryRepository.getPosts({ sortBy, sortDirection, pageNumber, pageSize });
-    },
+@injectable()
+export class PostsService{
+    constructor(
+        @inject(PostsRepository) protected postsRepository: PostsRepository,
+        @inject(BlogsQueryRepository) protected blogsQueryRepository: BlogsQueryRepository
+    )  {
+    }
+    async createPost(title: string, shortDescription: string, content: string, blogId: string): Promise<PostViewModel> {
 
-    async getPostById(postId: string): Promise<PostViewModel | null> {
-        return await postsQueryRepository.getPostById(postId);
-    },
-
-    async getPostsByBlogId(
-        blogId: string,
-        sortBy: string,
-        sortDirection: 1 | -1,
-        skip: number,
-        limit: number
-    ): Promise<PostViewModel[]> {
-        return await postsQueryRepository.getPostsByBlogId(blogId, sortBy, sortDirection, skip, limit);
-    },
-
-    async getTotalPostsCountByBlogId(blogId: string): Promise<number> {
-        return await postsQueryRepository.getTotalPostsCountByBlogId(blogId);
-    },
-};
-
-export const postsService = {
-    async createPost(postData: PostData): Promise<PostViewModel> {
-        const { title, shortDescription, content, blogId } = postData;
-
-        const blog = await blogsQueryRepository.getBlogById(blogId);
+        const blog = await this.blogsQueryRepository.getBlogById(blogId);
         if (!blog) {
             throw new Error('Blog not found');
         }
         const blogName: string = blog.name;
 
-        return await postsRepository.createPost({ title, shortDescription, content, blogId, blogName });
-    },
-
+        return await this.postsRepository.createPost({ title, shortDescription, content, blogId, blogName });
+    }
     async updatePost(id: string, updateData: PostInputModel): Promise<boolean> {
-        return await postsRepository.updatePost(id, updateData);
-    },
-
+        return await this.postsRepository.updatePost(id, updateData);
+    }
     async deletePostById(postId: string): Promise<boolean> {
-        return await postsRepository.deletePostById(postId);
-    },
-};
+        return await this.postsRepository.deletePostById(postId);
+    }
+}
+export class PostsQueryService{
+    constructor(protected postsQueryRepository: PostsQueryRepository, protected blogsQueryRepository: BlogsQueryRepository) {
+    }
+    async getPosts({   sortBy, sortDirection, pageNumber, pageSize }: { sortBy: string; sortDirection: 1 | -1; pageNumber: number; pageSize: number; }): Promise<Paginator<PostViewModel>> {
+        return await this.postsQueryRepository.getPosts({ sortBy, sortDirection, pageNumber, pageSize });
+    }
+    async getPostById(postId: string): Promise<PostViewModel | null> {
+        return await this.postsQueryRepository.getPostById(postId);
+    }
+    async getPostsByBlogId( blogId: string, pageNumber: number, pageSize: number, sortBy: string, sortDirection: 1 | -1 ): Promise<Paginator<PostViewModel> | null> {
+        const blog = await this.blogsQueryRepository.getBlogById(blogId);
+        if (!blog) return null;
+
+        const skip = (pageNumber - 1) * pageSize;
+        const limit = pageSize;
+
+        const posts = await this.postsQueryRepository.getPostsByBlogId(blogId, sortBy, sortDirection, skip, limit);
+        const totalCount = await this.postsQueryRepository.getTotalPostsCountByBlogId(blogId);
+        const pagesCount = Math.ceil(totalCount / pageSize);
+
+        const items: PostViewModel[] = posts.map(post => ({
+            id: post.id,
+            title: post.title,
+            shortDescription: post.shortDescription,
+            content: post.content,
+            blogId: post.blogId,
+            blogName: blog.name,
+            createdAt: post.createdAt,
+        }));
+
+        return {
+            pagesCount,
+            page: pageNumber,
+            pageSize,
+            totalCount,
+            items,
+        };
+    }
+}
+
