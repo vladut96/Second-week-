@@ -6,8 +6,8 @@ import { injectable, inject } from 'inversify';
 export class CommentsService{
     constructor(@inject(CommentsRepository) private commentsRepository: CommentsRepository) {
     }
-    async getCommentById(commentId: string): Promise<CommentViewModel | null> {
-        return await this.commentsRepository.getCommentById(commentId);
+    async getCommentById(commentId: string, currentUserId?: string): Promise<CommentViewModel | null> {
+        return await this.commentsRepository.getCommentById(commentId, currentUserId);
     }
     async updateComment(commentId: string, content: string, userId: string): Promise<{ success: boolean; error?: string }> {
         const comment = await this.commentsRepository.getCommentById(commentId, userId);

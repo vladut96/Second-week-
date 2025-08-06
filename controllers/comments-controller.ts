@@ -7,7 +7,8 @@ export class CommentsController {
     constructor(@inject(CommentsService) private commentsService: CommentsService) {
     }
     async getCommentById(req: Request, res: Response) {
-        const comment = await this.commentsService.getCommentById(req.params.commentId);
+        const unknownUserId =  undefined;
+        const comment = await this.commentsService.getCommentById(req.params.commentId, unknownUserId);
 
         if (!comment) {
             return res.status(404).json({message: "Comment not found"});
