@@ -1,4 +1,4 @@
-import { PostsQueryService, PostsService} from "../src/domain/posts-service";
+import {PostsQueryService, PostsService} from "../src/domain/posts-service";
 import {Request, Response} from "express";
 import {CommentsService} from "../src/domain/comments-service";
 import {injectable, inject} from "inversify";
