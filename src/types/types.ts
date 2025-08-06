@@ -74,11 +74,22 @@ export interface EmailConfirmation {
     expirationDate: Date | null;
     isConfirmed: boolean;
 }
-export interface CommentViewModel<T>  {
+export type LikeStatus = 'Like' | 'Dislike' | 'None';
+
+export interface LikeInfo {
+    userId: string;
+    status: LikeStatus;
+    createdAt: Date;
+}
+
+export interface CommentViewModel<T> {
     id: string;
     content: string;
-    commentatorInfo: CommentatorInfo ;
+    commentatorInfo: T;
     createdAt: string;
+    likes: LikeInfo[];
+    likesCount: number;
+    dislikesCount: number;
 }
 export interface CommentatorInfo {
     userId: string;

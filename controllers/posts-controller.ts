@@ -41,12 +41,13 @@ const postExists = await this.postsQueryService.getPostById(postId);
 if (!postExists) {
     return res.sendStatus(404);
 }
-
+if (!userLogin) {
+            throw new Error('userLogin is required');
+        }
 const newComment = await this.commentsService.createComment({
     postId,
     content,
     userId,
-    // @ts-ignore
     userLogin
 });
 return res.status(201).json(newComment);

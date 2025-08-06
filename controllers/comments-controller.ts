@@ -6,7 +6,6 @@ import { injectable, inject } from 'inversify';
 export class CommentsController {
     constructor(@inject(CommentsService) private commentsService: CommentsService) {
     }
-
     async getCommentById(req: Request, res: Response) {
         const comment = await this.commentsService.getCommentById(req.params.commentId);
 
@@ -43,5 +42,33 @@ if (!result.success) {
 }
 return res.sendStatus(204);
 }
+    async updateLikeStatus(req: Request, res: Response) {
+        const  { commentId } = req.params;
+        const  likeStatus  = req.body;
+        const userId = req.user!.userId;
+
+        if (!['Like', 'Dislike', 'None'].includes(likeStatus)) {
+            return res.status(400).json({
+                errorsMessages: [{
+                    message: "Invalid like status",
+                    field: "likeStatus"
+                }]
+            });
+        }
+
+        const result = await this.commentsService.updateLikeStatus(
+            commentId,
+            userId,
+            likeStatus
+        );
+
+        if (!result.success) {
+            if (result.error === "Comment not found") return res.sendStatus(404);
+            return res.sendStatus(400);
+        }
+
+        return res.sendStatus(204);
+    }
+
 
 }

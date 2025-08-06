@@ -133,6 +133,12 @@ export const validatePassword = [
         .withMessage('Email format is invalid'),
 ];
 
+export const likeStatusValidation = [
+    body('likeStatus')
+        .isIn(['Like', 'Dislike', 'None'])
+        .withMessage('Invalid like status')
+];
+
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

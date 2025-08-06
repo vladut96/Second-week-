@@ -8,7 +8,7 @@ import {
     PostInputModel,
     RefreshTokenModel,
     RegisterUserDB,
-    RequestLog
+    RequestLog, LikeStatus
 } from "../types/types";
 
 const emailConfirmationSchema = new Schema<EmailConfirmation>({
@@ -54,13 +54,38 @@ const postSchema = new Schema<PostInputModel>({
     blogId: { type: String, required: true }
 });
 
+const likeSchema = new Schema({
+    userId: { type: String, required: true },
+    status: {
+        type: String,
+        required: true,
+        enum: ['Like', 'Dislike'] as LikeStatus[],
+        default: 'Like'
+    },
+    createdAt: { type: Date, default: Date.now }
+}, { _id: false });
+
 const commentSchema = new Schema<CommentViewModel<CommentatorInfo>>({
     content: { type: String, required: true },
     commentatorInfo: {
         userId: { type: String, required: true },
         userLogin: { type: String, required: true }
     },
-    createdAt: { type: String, required: true }
+    createdAt: { type: String, required: true },
+    likes: {
+        type: [likeSchema],
+        default: []
+    },
+    likesCount: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    dislikesCount: {
+        type: Number,
+        required: true,
+        default: 0
+    }
 });
 
 const refreshTokenSchema = new Schema<RefreshTokenModel>({
@@ -86,6 +111,9 @@ const deviceAuthSessionSchema = new Schema<DeviceAuthSession>({
     ip: { type: String, required: true },
     exp: { type: String }
 });
+
+// Добавляем индекс для быстрого поиска лайков пользователя
+commentSchema.index({ 'likes.userId': 1 }, { unique: true, sparse: true });
 
 export const UserModel = model('User', userSchema);
 export const BlogModel = model('Blog', blogSchema);

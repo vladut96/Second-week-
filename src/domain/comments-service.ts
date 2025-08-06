@@ -1,5 +1,5 @@
 import {CommentsRepository} from "../Repository/commentsRepository";
-import {CommentatorInfo, CommentViewModel} from "../types/types";
+import {CommentatorInfo, CommentViewModel, LikeStatus} from "../types/types";
 import { injectable, inject } from 'inversify';
 
 @injectable()
@@ -39,13 +39,7 @@ export class CommentsService{
         }
         return { success: true };
     }
-    async getCommentsByPostId({ postId, pageNumber, pageSize, sortBy,  sortDirection }: {
-        postId: string;
-        pageNumber: number;
-        pageSize: number;
-        sortBy: string;
-        sortDirection: 1 | -1;
-    }) {
+    async getCommentsByPostId({ postId, pageNumber, pageSize, sortBy,  sortDirection }: { postId: string; pageNumber: number; pageSize: number; sortBy: string; sortDirection: 1 | -1;}) {
         return await this.commentsRepository.getCommentsByPostId({
             postId,
             pageNumber,
@@ -54,7 +48,6 @@ export class CommentsService{
             sortDirection
         });
     }
-
     async createComment({ postId, content, userId, userLogin }: {
         postId: string;
         content: string;
@@ -67,6 +60,16 @@ export class CommentsService{
             userId,
             userLogin
         });
+    }
+    async updateLikeStatus( commentId: string, userId: string, likeStatus: LikeStatus ): Promise<{ success: boolean; error?: string }> {
+
+        const updated = await this.commentsRepository.updateLikeStatus( commentId, userId, likeStatus );
+
+        if (!updated) {
+            return { success: false, error: "Comment not found" };
+        }
+
+        return { success: true };
     }
 }
 
