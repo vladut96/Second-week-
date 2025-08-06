@@ -46,6 +46,7 @@ return res.sendStatus(204);
     async updateLikeStatus(req: Request, res: Response) {
         const  { commentId } = req.params;
         const  { likeStatus }   = req.body;
+        debugger;
         const userId = req.user!.userId;
 
         const result = await this.commentsService.updateLikeStatus(
