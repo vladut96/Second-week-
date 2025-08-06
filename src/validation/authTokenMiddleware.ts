@@ -68,3 +68,15 @@ export const validateRefreshToken = async (req: Request, res: Response, next: Ne
         return res.sendStatus(401);
     }
 };
+export const authenticateTokenToGetID = (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+            const userPayload: any = jwt.verify(token, process.env.JWT_SECRET!);
+            req.user = { userId: userPayload.userId };
+        } catch (err) {
+        }
+    }
+    next();
+};
