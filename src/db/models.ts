@@ -3,12 +3,11 @@ import {
     EmailConfirmation,
     BlogInputModel,
     CommentatorInfo,
-    CommentViewModel,
     DeviceAuthSession,
     PostInputModel,
     RefreshTokenModel,
     RegisterUserDB,
-    RequestLog, LikeStatus
+    RequestLog, LikeStatus, CommentDBModel
 } from "../types/types";
 
 const emailConfirmationSchema = new Schema<EmailConfirmation>({
@@ -65,7 +64,7 @@ const likeSchema = new Schema({
     createdAt: { type: Date, default: Date.now }
 }, { _id: false });
 
-const commentSchema = new Schema<CommentViewModel<CommentatorInfo>>({
+const commentSchema = new Schema<CommentDBModel<CommentatorInfo>>({
     content: { type: String, required: true },
     commentatorInfo: {
         userId: { type: String, required: true },

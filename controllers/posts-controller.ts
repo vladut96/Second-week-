@@ -44,12 +44,12 @@ if (!postExists) {
 if (!userLogin) {
             throw new Error('userLogin is required');
         }
-const newComment = await this.commentsService.createComment({
+const newComment = await this.commentsService.createComment(
     postId,
     content,
     userId,
     userLogin
-});
+);
 return res.status(201).json(newComment);
 }
     async getPosts (req: Request, res: Response) {

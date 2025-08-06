@@ -1,12 +1,12 @@
 import {CommentsRepository} from "../Repository/commentsRepository";
-import {CommentatorInfo, CommentViewModel, LikeStatus} from "../types/types";
+import {CommentViewModel, LikeStatus} from "../types/types";
 import { injectable, inject } from 'inversify';
 
 @injectable()
 export class CommentsService{
     constructor(@inject(CommentsRepository) private commentsRepository: CommentsRepository) {
     }
-    async getCommentById(commentId: string): Promise<CommentViewModel<CommentatorInfo> | null> {
+    async getCommentById(commentId: string): Promise<CommentViewModel | null> {
         return await this.commentsRepository.getCommentById(commentId);
     }
     async updateComment(commentId: string, content: string, userId: string): Promise<{ success: boolean; error?: string }> {
@@ -48,18 +48,13 @@ export class CommentsService{
             sortDirection
         });
     }
-    async createComment({ postId, content, userId, userLogin }: {
-        postId: string;
-        content: string;
-        userId: string;
-        userLogin: string;
-    }) {
-        return await this.commentsRepository.createComment({
+    async createComment( postId: string, content: string, userId: string, userLogin: string ) {
+        return await this.commentsRepository.createComment(
             postId,
             content,
             userId,
             userLogin
-        });
+        );
     }
     async updateLikeStatus( commentId: string, userId: string, likeStatus: LikeStatus ): Promise<{ success: boolean; error?: string }> {
 

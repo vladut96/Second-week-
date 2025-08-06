@@ -1,16 +1,23 @@
 import { CommentModel } from "../db/models";
-import {CommentatorInfo, CommentViewModel, LikeStatus} from "../types/types";
+import {CommentViewModel, LikeStatus} from "../types/types";
 import { Types } from "mongoose";
 import {injectable} from "inversify";
 
 @injectable()
 export class CommentsRepository {
-    async getCommentById(commentId: string): Promise<CommentViewModel<CommentatorInfo> | null> {
+    async getCommentById(commentId: string): Promise<CommentViewModel | null> {
         if (!Types.ObjectId.isValid(commentId)) return null;
 
         const comment = await CommentModel.findById(commentId).lean();
         if (!comment) return null;
+        let myStatus: 'None' | 'Like' | 'Dislike' = 'None';
 
+        if (comment.commentatorInfo.userId) {
+            const userLike = comment.likes.find(like => like.userId === comment.commentatorInfo.userId);
+            if (userLike) {
+                myStatus = userLike.status;
+            }
+        }
         return {
             id: comment._id.toString(),
             content: comment.content,
@@ -19,9 +26,11 @@ export class CommentsRepository {
                 userLogin: comment.commentatorInfo.userLogin,
             },
             createdAt: comment.createdAt,
-            likes: comment.likes || [],
-            likesCount: comment.likesCount || 0,
-            dislikesCount: comment.dislikesCount || 0
+            likesInfo: {
+                likesCount: comment.likesCount || 0,
+                dislikesCount: comment.dislikesCount || 0,
+                myStatus
+            }
         };
     }
     async updateComment(commentId: string, content: string): Promise<boolean> {
@@ -67,7 +76,7 @@ export class CommentsRepository {
             }))
         };
     }
-    async createComment({ postId, content, userId, userLogin}: { postId: string; content: string; userId: string; userLogin: string; }) {
+    async createComment( postId: string, content: string, userId: string, userLogin: string)  {
         const newComment = new CommentModel({
             postId,
             content,
@@ -76,11 +85,9 @@ export class CommentsRepository {
                 userLogin
             },
             createdAt: new Date().toISOString(),
-            likesInfo: {
-                likesCount: 0,
-                dislikesCount: 0,
-                myStatus: 'None'
-            }
+            likes: [],
+            likesCount: 0,
+            dislikesCount: 0
         });
 
         await newComment.save();
@@ -88,11 +95,16 @@ export class CommentsRepository {
         return {
             id: newComment._id.toString(),
             content: newComment.content,
-            commentatorInfo: newComment.commentatorInfo,
+            commentatorInfo: {
+                userId: newComment.commentatorInfo.userId,
+                userLogin: newComment.commentatorInfo.userLogin
+            },
             createdAt: newComment.createdAt,
-            likes: newComment.likes,
-            likesCount: newComment.likesCount,
-            dislikesCount: newComment.dislikesCount
+            likesInfo: {
+                likesCount: newComment.likesCount,
+                dislikesCount: newComment.dislikesCount,
+                myStatus: 'None'
+            }
         };
     }
     async updateLikeStatus( commentId: string, userId: string, likeStatus: LikeStatus ): Promise<boolean> {

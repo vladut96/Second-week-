@@ -82,7 +82,7 @@ export interface LikeInfo {
     createdAt: Date;
 }
 
-export interface CommentViewModel<T> {
+export interface CommentDBModel<T> {
     id: string;
     content: string;
     commentatorInfo: T;
@@ -91,6 +91,20 @@ export interface CommentViewModel<T> {
     likesCount: number;
     dislikesCount: number;
 }
+export type CommentViewModel = {
+    id: string;
+    content: string;
+    commentatorInfo: {
+        userId: string;
+        userLogin: string;
+    };
+    createdAt: string;
+    likesInfo: {
+        likesCount: number;
+        dislikesCount: number;
+        myStatus: string;
+    };
+};
 export interface CommentatorInfo {
     userId: string;
     userLogin: string;
