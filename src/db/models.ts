@@ -114,10 +114,10 @@ const deviceAuthSessionSchema = new Schema<DeviceAuthSession>({
 // Добавляем индекс для быстрого поиска лайков пользователя
 commentSchema.index({ 'likes.userId': 1 }, { unique: true, sparse: true });
 
-export const UserModel = model('User', userSchema);
-export const BlogModel = model('Blog', blogSchema);
-export const PostModel = model('Post', postSchema);
-export const CommentModel = model('Comment', commentSchema);
-export const RefreshTokenModelM = model('RefreshToken', refreshTokenSchema);
-export const RequestLogModel = model('RequestLog', requestLogSchema);
-export const DeviceAuthSessionModel = model('DeviceAuthSession', deviceAuthSessionSchema);
+export const UserModel = model('User', userSchema, 'User');
+export const BlogModel = model('Blog', blogSchema, 'Blog');
+export const PostModel = model('Post', postSchema, 'Post');
+export const CommentModel = model('Comment', commentSchema, 'Comment');
+export const RefreshTokenModelM = model('RefreshToken', refreshTokenSchema, 'RefreshToken');
+export const RequestLogModel = model('RequestLog', requestLogSchema, 'RequestLog');
+export const DeviceAuthSessionModel = model('DeviceAuthSession', deviceAuthSessionSchema, 'DeviceAuthSession');
