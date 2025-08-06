@@ -135,8 +135,12 @@ export const validatePassword = [
 
 export const likeStatusValidation = [
     body('likeStatus')
+        .trim()
+        .notEmpty()
+        .withMessage('Like status is required')
+        .bail()
         .isIn(['Like', 'Dislike', 'None'])
-        .withMessage('Invalid like status')
+        .withMessage('Like status must be "Like", "Dislike", or "None"')
 ];
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {

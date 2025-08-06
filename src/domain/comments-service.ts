@@ -56,12 +56,12 @@ export class CommentsService{
             userLogin
         );
     }
-    async updateLikeStatus( commentId: string, userId: string, likeStatus: LikeStatus ): Promise<{ success: boolean; error?: string }> {
+    async updateLikeStatus( commentId: string, userId: string, likeStatus: LikeStatus ): Promise<{ success: boolean;}> {
 
         const updated = await this.commentsRepository.updateLikeStatus( commentId, userId, likeStatus );
 
         if (!updated) {
-            return { success: false, error: "Comment not found" };
+            return { success: false };
         }
 
         return { success: true };

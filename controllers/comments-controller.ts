@@ -47,15 +47,6 @@ return res.sendStatus(204);
         const  likeStatus  = req.body;
         const userId = req.user!.userId;
 
-        if (!['Like', 'Dislike', 'None'].includes(likeStatus)) {
-            return res.status(400).json({
-                errorsMessages: [{
-                    message: "Invalid like status",
-                    field: "likeStatus"
-                }]
-            });
-        }
-
         const result = await this.commentsService.updateLikeStatus(
             commentId,
             userId,
@@ -63,8 +54,7 @@ return res.sendStatus(204);
         );
 
         if (!result.success) {
-            if (result.error === "Comment not found") return res.sendStatus(404);
-            return res.sendStatus(400);
+           return res.sendStatus(404);
         }
 
         return res.sendStatus(204);
