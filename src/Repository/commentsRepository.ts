@@ -76,9 +76,11 @@ export class CommentsRepository {
                 userLogin
             },
             createdAt: new Date().toISOString(),
-            likes: [],
-            likesCount: 0,
-            dislikesCount: 0
+            likesInfo: {
+                likesCount: 0,
+                dislikesCount: 0,
+                myStatus: 'None'
+            }
         });
 
         await newComment.save();
