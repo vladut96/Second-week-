@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 
 export const generateTokens = (user: { _id: any; email: string; login: string }, deviceId: string) => {
-    const accessTokenExpiresIn = '10s';
-    const refreshTokenExpiresIn = '20s';
+    const accessTokenExpiresIn = '1000000s';
+    const refreshTokenExpiresIn = '200000s';
 
     const accessToken = jwt.sign(
         {
