@@ -10,7 +10,7 @@ export class CommentsService{
         return await this.commentsRepository.getCommentById(commentId);
     }
     async updateComment(commentId: string, content: string, userId: string): Promise<{ success: boolean; error?: string }> {
-        const comment = await this.commentsRepository.getCommentById(commentId);
+        const comment = await this.commentsRepository.getCommentById(commentId, userId);
         if (!comment) {
             return { success: false, error: "Comment not found" };
         }

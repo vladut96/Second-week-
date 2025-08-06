@@ -5,19 +5,21 @@ import {injectable} from "inversify";
 
 @injectable()
 export class CommentsRepository {
-    async getCommentById(commentId: string): Promise<CommentViewModel | null> {
+    async getCommentById(commentId: string, currentUserId?: string): Promise<CommentViewModel | null> {
         if (!Types.ObjectId.isValid(commentId)) return null;
 
         const comment = await CommentModel.findById(commentId).lean();
         if (!comment) return null;
-        let myStatus: 'None' | 'Like' | 'Dislike' = 'None';
 
-        if (comment.commentatorInfo.userId) {
-            const userLike = comment.likes.find(like => like.userId === comment.commentatorInfo.userId);
+        let myStatus: LikeStatus = 'None';
+
+        if (currentUserId) {
+            const userLike = comment.likes.find(like => like.userId === currentUserId);
             if (userLike) {
                 myStatus = userLike.status;
             }
         }
+
         return {
             id: comment._id.toString(),
             content: comment.content,
