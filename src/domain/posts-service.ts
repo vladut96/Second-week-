@@ -1,10 +1,11 @@
-import {PostInputModel, Paginator, PostViewModel, PaginationQuery} from "../types/types";
+import {PostInputModel, Paginator, PostViewModel, PaginationQuery, LikeStatus} from "../types/types";
 import { PostsQueryRepository, PostsRepository } from "../Repository/postsRepository";
 import { BlogsQueryRepository } from "../Repository/blogsRepository";
 import { injectable, inject } from "inversify";
-import {BlogsEntity} from "../entities/blogs.entity";
 import {PostEntity} from "../entities/post.entity";
 import {buildPaginator} from "../utils/pagination";
+import {PostModel, PostReactionModel} from "../db/models";
+import mongoose, {Types} from "mongoose";
 
 @injectable()
 export class PostsService {
@@ -41,6 +42,54 @@ export class PostsService {
 
     async deletePostById(postId: string): Promise<boolean> {
         return this.postsRepository.deletePostById(postId);
+    }
+    async setLikeStatus(
+        postId: string,
+        userId: string,
+        userLogin: string,
+        likeStatus: LikeStatus
+    ): Promise<'OK' | 'NOT_FOUND'> {
+        const session = await mongoose.startSession();
+        try {
+            let outcome: 'OK' | 'NOT_FOUND' = 'OK';
+
+            await session.withTransaction(async () => {
+                if (!Types.ObjectId.isValid(postId)) { outcome = 'NOT_FOUND'; return; }
+                const post = await PostModel.findById(postId).session(session);
+                if (!post) { outcome = 'NOT_FOUND'; return; }
+                const existing = await PostReactionModel
+                    .findOne({ postId, userId })
+                    .session(session);
+
+                const prev: LikeStatus = existing ? (existing.status as LikeStatus) : 'None';
+                const next: LikeStatus = likeStatus;
+
+                if (prev === next) return;
+
+                if (next === 'None') {
+                    if (existing) await existing.deleteOne({ session });
+                } else {
+                    await PostReactionModel.updateOne(
+                        { postId, userId },
+                        { $set: { status: next, userLogin } }, // денорм login для newestLikes
+                        { upsert: true, session }
+                    );
+                }
+                const inc = { likesCount: 0, dislikesCount: 0 };
+                if (prev === 'Like') inc.likesCount--;
+                if (prev === 'Dislike') inc.dislikesCount--;
+                if (next === 'Like') inc.likesCount++;
+                if (next === 'Dislike') inc.dislikesCount++;
+
+                if (inc.likesCount !== 0 || inc.dislikesCount !== 0) {
+                    await PostModel.updateOne({ _id: postId }, { $inc: inc }).session(session);
+                }
+            });
+
+            return outcome;
+        } finally {
+           await session.endSession();
+        }
     }
 }
 

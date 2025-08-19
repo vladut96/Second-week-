@@ -135,7 +135,7 @@ export interface CommentatorInfo {
 }
 export interface MeViewModel {
     email?: string;
-    login?: string;
+    login: string;
     userId: string;
     deviceId?: string;
 }

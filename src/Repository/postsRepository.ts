@@ -26,7 +26,7 @@ export class PostsRepository {
             if (!updated) throw new Error("Post not found after update");
             return PostEntity.fromPersistence(updated);
         } else {
-            // гарантируем инициализацию счётчиков
+
             if (payload.likesCount === undefined) payload.likesCount = 0;
             if (payload.dislikesCount === undefined) payload.dislikesCount = 0;
 

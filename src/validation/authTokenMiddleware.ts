@@ -4,39 +4,42 @@ import dotenv from 'dotenv';
 import { authRepository } from "../composition-root";
 dotenv.config();
 
+export interface AccessTokenPayload extends JwtPayload {
+    userId: string;
+    login: string;
+    email: string;
+}
+
+export function isAccessTokenPayload(x: unknown): x is AccessTokenPayload {
+    return !!x
+        && typeof x === "object"
+        && typeof (x as any).userId === "string"
+        && typeof (x as any).login === "string"
+        && typeof (x as any).email === "string";
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-export const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+export function authenticateToken(req: Request, res: Response, next: NextFunction) {
+    const header = req.header("authorization");
+    if (!header) return res.sendStatus(401);
 
-    if (!token) {
-        return res.sendStatus(401); // 401 Unauthorized (отсутствует токен)
+    const [scheme, token] = header.split(" ");
+    if (scheme !== "Bearer" || !token) return res.sendStatus(401);
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (!isAccessTokenPayload(decoded)) {
+            return res.sendStatus(403);
+        }
+
+        const { userId, login, email } = decoded;
+        req.user = { userId, login, email };
+        req.userId = userId;
+        return next();
+    } catch (e) {
+        return res.sendStatus(401);
     }
-
-    // @ts-ignore
-    jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err) {
-            console.error("JWT verification error:", err.message); // Логирование для отладки
-            return res.sendStatus(401); // 401 Unauthorized (недействительный токен)
-        }
-
-        // Проверяем, что payload содержит userId
-        const payload = decoded as JwtPayload;
-        if (!payload?.userId) {
-            return res.sendStatus(403); // 403 Forbidden (невалидный payload)
-        }
-
-        req.user = {
-            email: payload.email,
-            login: payload.login,
-            userId: payload.userId,
-        };
-
-        next();
-    });
-    return
-};
+}
 export const validateRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
     const refreshToken = req.cookies?.refreshToken;
 
@@ -68,16 +71,22 @@ export const validateRefreshToken = async (req: Request, res: Response, next: Ne
         return res.sendStatus(401);
     }
 };
-export const authenticateTokenToGetID = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.split(' ')[1];
-        try {
-            const userPayload: any = jwt.verify(token, process.env.JWT_SECRET!);
-            req.user = { userId: userPayload.userId };
-        } catch (err) {
-        }
-    }
+export const authenticateTokenToGetID = (req: Request, _res: Response, next: NextFunction) => {
+    const header = req.header("authorization");
+    if (!header) return next();
 
-    next();
+    const [scheme, token] = header.split(" ");
+    if (scheme !== "Bearer" || !token) return next();
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (!isAccessTokenPayload(decoded)) return next();
+
+        const { userId, login, email } = decoded;
+        req.user = { userId, login, email }; // строго соответствует MeViewModel
+        req.userId = userId;
+    } catch {
+    } finally {
+         next();
+    }
 };

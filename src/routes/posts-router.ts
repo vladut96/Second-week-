@@ -1,6 +1,6 @@
 import {Router} from "express";
 import {
-    handleValidationErrors,
+    handleValidationErrors, likeStatusValidation,
     paginationValidationRules,
     validateComment,
     validatePostInput
@@ -10,7 +10,7 @@ import {authenticateToken, authenticateTokenToGetID} from "../validation/authTok
 import {postsController} from "../composition-root";
 
 export const postsRouter = Router();
-
+postsRouter.put( "/:postId/like-status", authenticateToken, likeStatusValidation, handleValidationErrors, postsController.setPostLikeStatus.bind(postsController));
 postsRouter.get('/', paginationValidationRules, authenticateTokenToGetID, postsController.getPosts.bind(postsController) );
 postsRouter.get('/:id',authenticateTokenToGetID, postsController.getPostsById.bind(postsController) );
 postsRouter.post('/', basicAuthMiddleware, validatePostInput, handleValidationErrors, postsController.createPost.bind(postsController) );

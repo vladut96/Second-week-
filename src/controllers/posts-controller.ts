@@ -13,6 +13,20 @@ export class PostsController {
         @inject(CommentsService) protected commentsService: CommentsService
     ) {
     }
+    async setPostLikeStatus(req: Request, res: Response) {
+        const postId = req.params.postId;
+        const likeStatus = req.body.likeStatus as "None" | "Like" | "Dislike";
+
+        const result = await this.postsService.setLikeStatus(
+            postId,
+            req.user!.userId,
+            req.user!.login,
+            likeStatus
+        );
+
+        if (result === "NOT_FOUND") return res.sendStatus(404);
+        return res.sendStatus(204);
+    }
     async getPosts (req: Request, res: Response) {
         const { pageNumber, pageSize, sortBy, sortDirection } = matchedData(req, {
             locations: ['query'],
@@ -107,4 +121,5 @@ return res.sendStatus(204);
         );
         return res.status(201).json(newComment);
     }
+
 }
