@@ -1,4 +1,4 @@
-import {CommentsService} from "../src/domain/comments-service";
+import {CommentsService} from "../domain/comments-service";
 import {Request, Response} from "express";
 import { injectable, inject } from 'inversify';
 
@@ -46,7 +46,6 @@ return res.sendStatus(204);
     async updateLikeStatus(req: Request, res: Response) {
         const  { commentId } = req.params;
         const  { likeStatus }   = req.body;
-        debugger;
         const userId = req.user!.userId;
 
         const result = await this.commentsService.updateLikeStatus(

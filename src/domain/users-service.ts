@@ -1,43 +1,34 @@
 import { injectable, inject } from 'inversify';
 import { UsersRepository } from '../Repository/usersRepository';
-import { hashPassword } from '../utils/passwordUtils';
-import { UserViewModel, Paginator, UserInputModel } from '../types/types';
-import { EmailConfirmationFactory } from "../../service/email-confirmation-code-generator";
+import {UserViewModel, Paginator, UserInputModel, UsersQuery } from '../types/types';
+import {UserEntity} from "../entities/user.entity";
 
-@injectable() // Add this decorator
+@injectable()
 export class UsersService {
     constructor(
         @inject(UsersRepository) protected usersRepository: UsersRepository // Add @inject
     ) {}
 
-    async getUsers({ searchLoginTerm, searchEmailTerm, sortBy, sortDirection, pageNumber, pageSize }: { searchLoginTerm?: string; searchEmailTerm?: string; sortBy: string; sortDirection: 1 | -1; pageNumber: number; pageSize: number; }): Promise<Paginator<UserViewModel>> {
-        return await this.usersRepository.getUsers({ searchLoginTerm, searchEmailTerm, sortBy, sortDirection, pageNumber, pageSize });
+    async getUsers(params: UsersQuery ): Promise<Paginator<UserViewModel>> {
+        const { users, totalCount } = await this.usersRepository.getUsers(params);
+
+        const items: UserViewModel[] = users.map((user) =>
+            UserEntity.fromPersistence(user).toViewModel()
+        );
+
+        return {
+            pagesCount: Math.ceil(totalCount / params.pageSize),
+            page: params.pageNumber,
+            pageSize: params.pageSize,
+            totalCount,
+            items,
+        };
     }
-
-    async createUser(userData: UserInputModel) {
-        const existingUser = await this.usersRepository.getUserByLoginOrEmail(userData.login, userData.email);
-        if (existingUser) {
-            return {
-                errorsMessages: [{
-                    field: existingUser.login === userData.login ? 'login' : 'email',
-                    message: `${existingUser.login === userData.login ? 'Login' : 'Email'} should be unique`
-                }]
-            };
-        }
-        const passwordHash = await hashPassword(userData.password);
-
-        return await this.usersRepository.createUser({
-            login: userData.login,
-            email: userData.email,
-            passwordHash,
-            emailConfirmation: EmailConfirmationFactory.createDefault(),
-            passwordRecovery: {
-                recoveryCode: null,
-                expirationDate: null
-            }
-        });
+    async createUser(userDTO: UserInputModel) {
+        const userEntity = await UserEntity.create(userDTO);
+        const createdUser = await this.usersRepository.save(userEntity.toPersistence());
+        return UserEntity.fromPersistence(createdUser).toViewModel();
     }
-
     async deleteUserById(userId: string): Promise<boolean> {
         return await this.usersRepository.deleteUserById(userId);
     }

@@ -78,5 +78,6 @@ export const authenticateTokenToGetID = (req: Request, res: Response, next: Next
         } catch (err) {
         }
     }
+
     next();
 };

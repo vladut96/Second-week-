@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { DeviceAuthSessionModel, UserModel } from '../db/models';
 import { DeviceAuthSession, RegisterUserDB, UserAuthModel } from '../types/types';
-import { EmailConfirmation } from "../../service/email-confirmation-code-generator";
+import { EmailConfirmation } from "../service/email-confirmation-code-generator";
 
 @injectable()
 export class AuthRepository {
@@ -11,20 +11,17 @@ export class AuthRepository {
             { _id: 1, login: 1, email: 1, passwordHash: 1 }
         ).lean();
     }
-
     async getUserById(userId: string): Promise<UserAuthModel | null> {
         return UserModel.findById(
             userId,
             { _id: 1, login: 1, email: 1 }
         ).lean();
     }
-
     async findByConfirmationCode(code: string): Promise<RegisterUserDB<EmailConfirmation> | null> {
         return UserModel.findOne({
             'emailConfirmation.confirmationCode': code
         }).lean();
     }
-
     async updateConfirmationStatus(email: string, status: boolean): Promise<boolean> {
         try {
             const result = await UserModel.updateOne(
@@ -37,14 +34,12 @@ export class AuthRepository {
             return false;
         }
     }
-
     async findByEmail(email: string): Promise<RegisterUserDB<EmailConfirmation> | null> {
         return UserModel.findOne({
             email,
             'emailConfirmation.isConfirmed': false
         }).lean();
     }
-
     async createDeviceSession(sessionData: DeviceAuthSession): Promise<boolean> {
         try {
             const session = new DeviceAuthSessionModel(sessionData);
@@ -55,11 +50,9 @@ export class AuthRepository {
             return false;
         }
     }
-
     async findSessionByDeviceId(deviceId: string): Promise<DeviceAuthSession | null> {
         return DeviceAuthSessionModel.findOne({ deviceId }).lean();
     }
-
     async deleteDeviceSession(userId: string, deviceId: string): Promise<boolean> {
         const result = await DeviceAuthSessionModel.deleteOne({
             deviceId,
@@ -67,7 +60,6 @@ export class AuthRepository {
         });
         return result.deletedCount === 1;
     }
-
     async updateDeviceSession(sessionData: { deviceId: string; lastActiveDate: string; exp: string; }): Promise<boolean> {
         try {
             const result = await DeviceAuthSessionModel.updateOne(
@@ -85,7 +77,6 @@ export class AuthRepository {
             return false;
         }
     }
-
     async updateConfirmationCode(email: string, newCode: string, expirationDate: Date): Promise<boolean> {
         const result = await UserModel.updateOne(
             { email },
@@ -98,11 +89,9 @@ export class AuthRepository {
         );
         return result.modifiedCount === 1;
     }
-
     async findUserByEmail(email: string): Promise<RegisterUserDB<EmailConfirmation> | null> {
         return UserModel.findOne({ email }).lean();
     }
-
     async setPasswordRecoveryCode(email: string, recoveryCode: string, expirationDate: Date): Promise<boolean> {
         const result = await UserModel.updateOne(
             { email },
@@ -115,13 +104,11 @@ export class AuthRepository {
         );
         return result.modifiedCount === 1;
     }
-
     async findUserByRecoveryCode(recoveryCode: string): Promise<RegisterUserDB<EmailConfirmation> | null> {
         return UserModel.findOne({
             'passwordRecovery.recoveryCode': recoveryCode
         }).lean();
     }
-
     async updateUserPassword(email: string, newPasswordHash: string): Promise<boolean> {
         const result = await UserModel.updateOne(
             { email },

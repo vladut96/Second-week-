@@ -1,33 +1,31 @@
-import { Schema, model } from 'mongoose';
+import {Schema, model, InferSchemaType, Types} from 'mongoose';
 import {
     EmailConfirmation,
-    BlogInputModel,
     CommentatorInfo,
     DeviceAuthSession,
     PostInputModel,
     RefreshTokenModel,
     RegisterUserDB,
-    RequestLog, LikeStatus, CommentDBModel
+    RequestLog, LikeStatus, CommentDBModel, BlogViewModel
 } from "../types/types";
 
-const emailConfirmationSchema = new Schema<EmailConfirmation>({
-    confirmationCode: {
-        type: String,
-        default: null
-    },
-    expirationDate: {
-        type: Date,
-        default: null
-    },
-    isConfirmed: {
-        type: Boolean,
-        required: true
-    }
-});
-
-const userSchema = new Schema<RegisterUserDB<EmailConfirmation>>({
-    login: { type: String, required: true },
-    email: { type: String, required: true },
+const emailConfirmationSchema = new Schema<EmailConfirmation>(    {
+        confirmationCode: {
+            type: String,
+            default: null
+        },
+        expirationDate: {
+            type: Date,
+            default: null
+        },
+        isConfirmed: {
+            type: Boolean,
+            required: true
+        }
+    }, { _id: false });
+ const userSchema = new Schema<RegisterUserDB<EmailConfirmation>>({
+    login: { type: String, unique: true },
+    email: { type: String, unique: true },
     passwordHash: { type: String, required: true },
     createdAt: { type: String, required: true },
     emailConfirmation: {
@@ -39,20 +37,23 @@ const userSchema = new Schema<RegisterUserDB<EmailConfirmation>>({
         expirationDate: { type: Date, default: null }
     }
 });
-
-const blogSchema = new Schema<BlogInputModel>({
+const blogSchema = new Schema<BlogViewModel>({
     name: { type: String, required: true },
     description: { type: String, required: true },
-    websiteUrl: { type: String, required: true }
+    websiteUrl: { type: String, required: true },
+    createdAt: { type: String, required: true },
+    isMembership: { type: Boolean, required: true }
 });
-
-const postSchema = new Schema<PostInputModel>({
-    title: { type: String, required: true },
-    shortDescription: { type: String, required: true },
-    content: { type: String, required: true },
-    blogId: { type: String, required: true }
+const postSchema = new Schema({
+    title: String,
+    shortDescription: String,
+    content: String,
+    blogId: { type: String, index: true },
+    blogName: String,
+    createdAt: { type: String, required: true },
+    likesCount: { type: Number, default: 0 },
+    dislikesCount: { type: Number, default: 0 },
 });
-
 const likeSchema = new Schema({
     userId: { type: String, required: true },
     status: {
@@ -62,9 +63,20 @@ const likeSchema = new Schema({
         default: 'Like'
     },
     createdAt: { type: Date, default: Date.now }
-}, { _id: false });
-
+});
+const postReactionSchema = new Schema(
+    {
+        postId: { type: Types.ObjectId, ref: "Post", required: true, index: true },
+        userId: { type: Types.ObjectId, ref: "User", required: true },
+        userLogin: { type: String, required: true },
+        status: { type: String, enum: ["Like", "Dislike"], required: true },
+    },
+    { timestamps: true }
+);
+postReactionSchema.index({ postId: 1, userId: 1 }, { unique: true });
+postReactionSchema.index({ postId: 1, status: 1, createdAt: -1 });
 const commentSchema = new Schema<CommentDBModel<CommentatorInfo>>({
+    postId: { type: String, required: true },
     content: { type: String, required: true },
     commentatorInfo: {
         userId: { type: String, required: true },
@@ -86,7 +98,6 @@ const commentSchema = new Schema<CommentDBModel<CommentatorInfo>>({
         default: 0
     }
 });
-
 const refreshTokenSchema = new Schema<RefreshTokenModel>({
     token: { type: String, required: true },
     userId: { type: String, required: true },
@@ -95,13 +106,11 @@ const refreshTokenSchema = new Schema<RefreshTokenModel>({
     isValid: { type: Boolean, required: true },
     invalidatedAt: { type: Date }
 });
-
 const requestLogSchema = new Schema<RequestLog>({
     IP: { type: String },
     URL: { type: String, required: true },
     date: { type: Date, required: true }
 });
-
 const deviceAuthSessionSchema = new Schema<DeviceAuthSession>({
     userId: { type: String, required: true },
     deviceId: { type: String, required: true },
@@ -111,9 +120,9 @@ const deviceAuthSessionSchema = new Schema<DeviceAuthSession>({
     exp: { type: String }
 });
 
-// Добавляем индекс для быстрого поиска лайков пользователя
-commentSchema.index({ 'likes.userId': 1 }, { unique: true, sparse: true });
+export type UserSchemaType = InferSchemaType<typeof userSchema>;
 
+export const PostReactionModel = model('PostReaction', postReactionSchema, 'PostReaction');
 export const UserModel = model('Users', userSchema, 'Users');
 export const BlogModel = model('Blogs', blogSchema, 'Blogs');
 export const PostModel = model('Posts', postSchema, 'Posts');

@@ -1,7 +1,10 @@
-import { PostInputModel, Paginator, PostViewModel } from "../types/types";
+import {PostInputModel, Paginator, PostViewModel, PaginationQuery} from "../types/types";
 import { PostsQueryRepository, PostsRepository } from "../Repository/postsRepository";
 import { BlogsQueryRepository } from "../Repository/blogsRepository";
 import { injectable, inject } from "inversify";
+import {BlogsEntity} from "../entities/blogs.entity";
+import {PostEntity} from "../entities/post.entity";
+import {buildPaginator} from "../utils/pagination";
 
 @injectable()
 export class PostsService {
@@ -10,78 +13,94 @@ export class PostsService {
         @inject(BlogsQueryRepository) protected blogsQueryRepository: BlogsQueryRepository
     ) {}
 
-    async createPost(title: string, shortDescription: string, content: string, blogId: string): Promise<PostViewModel> {
+    async createPost(postPayload: PostInputModel): Promise<PostViewModel> {
+        const { title, shortDescription, content, blogId } = postPayload;
+
         const blog = await this.blogsQueryRepository.getBlogById(blogId);
         if (!blog) {
-            throw new Error('Blog not found');
+            throw new Error('BLOG_NOT_FOUND');
         }
-        const blogName: string = blog.name;
 
-        return await this.postsRepository.createPost({ title, shortDescription, content, blogId, blogName });
+        const entity = PostEntity.create({ title, shortDescription, content, blogId, blogName: blog.name });
+        const saved = await this.postsRepository.save(entity);
+
+        return saved.toViewModel('None', []);
     }
 
     async updatePost(id: string, updateData: PostInputModel): Promise<boolean> {
-        return await this.postsRepository.updatePost(id, updateData);
+        const entity = await this.postsRepository.getById(id);
+        if (!entity) return false;
+
+        const blog = await this.blogsQueryRepository.getBlogById(updateData.blogId);
+        if (!blog) return false;
+
+        entity.update(updateData, blog.name);
+        await this.postsRepository.save(entity);
+        return true;
     }
 
     async deletePostById(postId: string): Promise<boolean> {
-        return await this.postsRepository.deletePostById(postId);
+        return this.postsRepository.deletePostById(postId);
     }
 }
 
 @injectable()
 export class PostsQueryService {
     constructor(
-        @inject(PostsQueryRepository) protected postsQueryRepository: PostsQueryRepository,
-        @inject(BlogsQueryRepository) protected blogsQueryRepository: BlogsQueryRepository
+        @inject(PostsQueryRepository) private readonly postsQueryRepository: PostsQueryRepository,
     ) {}
 
-    async getPosts({ sortBy, sortDirection, pageNumber, pageSize }: {
-        sortBy: string;
-        sortDirection: 1 | -1;
-        pageNumber: number;
-        pageSize: number;
-    }): Promise<Paginator<PostViewModel>> {
-        return await this.postsQueryRepository.getPosts({ sortBy, sortDirection, pageNumber, pageSize });
+    async getPosts(query: PaginationQuery, currentUserId?: string): Promise<Paginator<PostViewModel>> {
+        const { items, totalCount } = await this.postsQueryRepository.getPosts(query);
+        const postIds = items.map(p => p._id.toString());
+
+        const [newestMap, myMap] = await Promise.all([
+            this.postsQueryRepository.listNewestLikes(postIds, 3),
+            this.postsQueryRepository.listMyStatuses(postIds, currentUserId),
+        ]);
+
+        const view = items.map(p => {
+            const entity = PostEntity.fromPersistence(p);
+            const myStatus = myMap.get(p._id.toString()) ?? "None";
+            const newestLikes = newestMap.get(p._id.toString()) ?? [];
+            return entity.toViewModel(myStatus, newestLikes);
+        });
+
+        return buildPaginator(query, totalCount, view);
     }
 
-    async getPostById(postId: string): Promise<PostViewModel | null> {
-        return await this.postsQueryRepository.getPostById(postId);
-    }
+    async getPostById(id: string, currentUserId?: string): Promise<PostViewModel | null> {
+        const p = await this.postsQueryRepository.getPostById(id);
+        if (!p) return null;
 
+        const [my, newest] = await Promise.all([
+            this.postsQueryRepository.listMyStatuses([p._id.toString()], currentUserId),
+            this.postsQueryRepository.listNewestLikes([p._id.toString()], 3),
+        ]);
+
+        const entity = PostEntity.fromPersistence(p);
+        return entity.toViewModel(my.get(p._id.toString()) ?? "None", newest.get(p._id.toString()) ?? []);
+    }
     async getPostsByBlogId(
         blogId: string,
-        pageNumber: number,
-        pageSize: number,
-        sortBy: string,
-        sortDirection: 1 | -1
-    ): Promise<Paginator<PostViewModel> | null> {
-        const blog = await this.blogsQueryRepository.getBlogById(blogId);
-        if (!blog) return null;
+        query: PaginationQuery,
+        currentUserId?: string
+    ): Promise<Paginator<PostViewModel>> {
+        const { items, totalCount } = await this.postsQueryRepository.getPostsByBlogId(blogId, query);
+        const postIds = items.map(p => p._id.toString());
 
-        const skip = (pageNumber - 1) * pageSize;
-        const limit = pageSize;
+        const [newestMap, myMap] = await Promise.all([
+            this.postsQueryRepository.listNewestLikes(postIds, 3),
+            this.postsQueryRepository.listMyStatuses(postIds, currentUserId),
+        ]);
 
-        const posts = await this.postsQueryRepository.getPostsByBlogId(blogId, sortBy, sortDirection, skip, limit);
-        const totalCount = await this.postsQueryRepository.getTotalPostsCountByBlogId(blogId);
-        const pagesCount = Math.ceil(totalCount / pageSize);
+        const view = items.map(p => {
+            const entity = PostEntity.fromPersistence(p);
+            const myStatus = myMap.get(p._id.toString()) ?? "None";
+            const newestLikes = newestMap.get(p._id.toString()) ?? [];
+            return entity.toViewModel(myStatus, newestLikes);
+        });
 
-        const items: PostViewModel[] = posts.map(post => ({
-            id: post.id,
-            title: post.title,
-            shortDescription: post.shortDescription,
-            content: post.content,
-            blogId: post.blogId,
-            blogName: blog.name,
-            createdAt: post.createdAt,
-        }));
-
-        return {
-            pagesCount,
-            page: pageNumber,
-            pageSize,
-            totalCount,
-            items,
-        };
+        return buildPaginator(query, totalCount, view);
     }
 }

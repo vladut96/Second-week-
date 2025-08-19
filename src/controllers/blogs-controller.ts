@@ -1,7 +1,9 @@
-import {BlogQueryService, BlogService} from "../src/domain/blogs-service";
+import {BlogQueryService, BlogService} from "../domain/blogs-service";
 import {Request, Response} from "express";
-import {PostsQueryService, PostsService} from "../src/domain/posts-service";
+import {PostsQueryService, PostsService} from "../domain/posts-service";
 import {inject, injectable} from "inversify";
+import {matchedData} from "express-validator";
+import {PaginationQuery, PostInputModel} from "../types/types";
 
 
 @injectable()
@@ -16,12 +18,11 @@ export class BlogsController {
     async getBlogs(req: Request, res: Response) {
     try {
     const searchNameTerm = req.query.searchNameTerm as string || null;
-    const sortBy = req.query.sortBy as string || 'createdAt';
-    const sortDirection = req.query.sortDirection === 'asc' ? 1 : -1;
-    const pageNumber = parseInt(req.query.pageNumber as string, 10) || 1;
-    const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
+        const { pageNumber, pageSize, sortBy, sortDirection } = matchedData(req, {
+            locations: ['query'],
+            includeOptionals: true }) as PaginationQuery;
 
-    const response = await this.blogsQueryService.getBlogs({
+        const response = await this.blogsQueryService.getBlogs({
         searchNameTerm,
         sortBy,
         sortDirection,
@@ -47,20 +48,23 @@ return res.status(200).json(foundBlog);
     async getPostsByBlogId(req: Request, res: Response) {
         const blogId = req.params.blogId;
 
-        try {
-            const pageNumber = parseInt(req.query.pageNumber as string, 10) || 1;
-            const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
-            const sortBy = req.query.sortBy as string || 'createdAt';
-            const sortDirection = req.query.sortDirection === 'asc' ? 1 : -1;
+        const blog = await this.blogsQueryService.getBlogById(blogId);
+        if (!blog) return res.sendStatus(404);
 
-            const response = await this.postsQueryService.getPostsByBlogId(blogId, pageNumber, pageSize, sortBy, sortDirection);
-            if (!response) {
-                return res.sendStatus(404);
-            }
-            return res.status(200).json(response);
-        } catch (e) {
-            return res.status(500).json({ message: 'Internal Server Error' });
-        }
+        const query = matchedData(req, {
+            locations: ['query'],
+            includeOptionals: true,
+        }) as PaginationQuery;
+
+        const currentUserId = req.user?.userId;
+
+        const response = await this.postsQueryService.getPostsByBlogId(
+            blogId,
+            query,
+            currentUserId
+        );
+
+        return res.status(200).json(response);
     }
     async createBlog (req: Request, res: Response) {
     const { name, description, websiteUrl } = req.body;
@@ -71,9 +75,22 @@ return res.status(201).json(newBlog);
         const blogId = req.params.blogId;
         const { title, shortDescription, content } = req.body;
 
-        const newPost = await this.postsService.createPost(title, shortDescription, content, blogId)
+        const blog = await this.blogsQueryService.getBlogById(blogId);
+        if (!blog) return res.sendStatus(404);
 
-        return res.status(201).json(newPost);
+        const input: PostInputModel = { title, shortDescription, content, blogId };
+
+        try {
+            const newPost = await this.postsService.createPost(input);
+            return res.status(201).json(newPost);
+        } catch (e: any) {
+            if (e?.message === 'BLOG_NOT_FOUND') {
+                return res.status(400).json({
+                    errorsMessages: [{ message: 'Blog not found', field: 'blogId' }],
+                });
+            }
+            throw e;
+        }
     }
     async updateBlog (req: Request, res: Response) {
     const { id } = req.params;

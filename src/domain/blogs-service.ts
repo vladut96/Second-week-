@@ -1,6 +1,7 @@
 import { BlogsQueryRepository, BlogsRepository } from "../Repository/blogsRepository";
-import { BlogInputModel, BlogViewModel, Paginator } from "../types/types";
+import {BlogInputModel, BlogsQuery, BlogViewModel, Paginator} from "../types/types";
 import { inject, injectable } from "inversify";
+import {BlogsEntity} from "../entities/blogs.entity";
 
 @injectable()
 export class BlogQueryService {
@@ -8,42 +9,9 @@ export class BlogQueryService {
         @inject(BlogsQueryRepository) private blogQueryRepository: BlogsQueryRepository
     ) {}
 
-    async getBlogs({
-                       searchNameTerm,
-                       sortBy,
-                       sortDirection,
-                       pageNumber,
-                       pageSize
-                   }: {
-        searchNameTerm: string | null;
-        sortBy: string;
-        sortDirection: 1 | -1;
-        pageNumber: number;
-        pageSize: number;
-    }): Promise<Paginator<BlogViewModel>> {
-        const skip = (pageNumber - 1) * pageSize;
-        const limit = pageSize;
-
-        const blogs = await this.blogQueryRepository.getBlogs({
-            searchNameTerm,
-            sortBy,
-            sortDirection,
-            skip,
-            limit,
-        });
-
-        const totalCount = await this.blogQueryRepository.getTotalBlogsCount(searchNameTerm);
-        const pagesCount = Math.ceil(totalCount / pageSize);
-
-        return {
-            pagesCount,
-            page: pageNumber,
-            pageSize,
-            totalCount,
-            items: blogs,
-        };
+    async getBlogs(query: BlogsQuery): Promise<Paginator<BlogViewModel>> {
+        return this.blogQueryRepository.getBlogs(query);
     }
-
     async getBlogById(id: string): Promise<BlogViewModel | null> {
         return await this.blogQueryRepository.getBlogById(id);
     }
@@ -52,18 +20,25 @@ export class BlogQueryService {
 @injectable()
 export class BlogService {
     constructor(
-        @inject(BlogsRepository) private blogsRepository: BlogsRepository
+        @inject(BlogsRepository) private readonly blogsRepository: BlogsRepository
     ) {}
 
-    async createBlog({ name, description, websiteUrl }: BlogInputModel): Promise<BlogViewModel> {
-        return await this.blogsRepository.createBlog({ name, description, websiteUrl });
+    async createBlog(dto: BlogInputModel): Promise<BlogViewModel> {
+        const entity = await BlogsEntity.create(dto);
+        const saved = await this.blogsRepository.save(entity);
+        return saved.toViewModel();
     }
 
     async updateBlog(id: string, updateData: BlogInputModel): Promise<boolean> {
-        return await this.blogsRepository.updateBlog(id, updateData);
+        const entity = await this.blogsRepository.getById(id);
+        if (!entity) return false;
+
+        entity.update(updateData);
+        await this.blogsRepository.save(entity);
+        return true;
     }
 
     async deleteBlogById(id: string): Promise<boolean> {
-        return await this.blogsRepository.deleteBlogById(id);
+        return this.blogsRepository.deleteBlogById(id);
     }
 }

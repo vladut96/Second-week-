@@ -1,15 +1,38 @@
 import {ObjectId} from "mongodb";
-
+import {Types} from "mongoose";
 
 export interface FieldError {
     message: string;
     field: string;
+}
+export type LikeStatus = 'Like' | 'Dislike' | 'None';
+
+export interface LikeInfo {
+    userId: string;
+    status: LikeStatus;
+    createdAt: Date;
+}
+export interface NewestLike {
+    addedAt: string;
+    userId: string;
+    login: string;
 }
 export interface PostInputModel {
     title: string;
     shortDescription: string;
     content: string;
     blogId: string;
+}
+export interface PostPersistence {
+    _id: Types.ObjectId;
+    title: string;
+    shortDescription: string;
+    content: string;
+    blogId: string;
+    blogName: string;
+    createdAt: string;
+    likesCount: number;
+    dislikesCount: number;
 }
 export interface PostViewModel {
     id: string;
@@ -19,14 +42,14 @@ export interface PostViewModel {
     blogId: string;
     blogName: string;
     createdAt: string;
+    extendedLikesInfo: {
+        likesCount: number;
+        dislikesCount: number;
+        myStatus: LikeStatus;
+        newestLikes: NewestLike[];
+    };
 }
-export interface PostData {
-    title: string;
-    shortDescription: string;
-    content: string;
-    blogId: string;
-    blogName?: string; // Optional if not always required
-}
+export type PostData = PostInputModel & { blogName: string };
 export interface BlogInputModel {
     name: string;
     description: string;
@@ -40,6 +63,14 @@ export interface BlogViewModel {
   createdAt: string;
   isMembership: boolean;
 }
+export type BlogPersistence = {
+    _id:  Types.ObjectId;
+    name: string;
+    description: string;
+    websiteUrl: string;
+    createdAt: string;
+    isMembership: boolean;
+};
 export interface UserViewModel  {
     id: string;
     login: string;
@@ -74,16 +105,9 @@ export interface EmailConfirmation {
     expirationDate: Date | null;
     isConfirmed: boolean;
 }
-export type LikeStatus = 'Like' | 'Dislike' | 'None';
-
-export interface LikeInfo {
-    userId: string;
-    status: LikeStatus;
-    createdAt: Date;
-}
-
 export interface CommentDBModel<T> {
     id: string;
+    postId: string;
     content: string;
     commentatorInfo: T;
     createdAt: string;
@@ -110,8 +134,8 @@ export interface CommentatorInfo {
     userLogin: string;
 }
 export interface MeViewModel {
-    email?: string;  // Делаем опциональным
-    login?: string;  // Делаем опциональным
+    email?: string;
+    login?: string;
     userId: string;
     deviceId?: string;
 }
@@ -136,7 +160,6 @@ export type RefreshTokenModel = {
     isValid: boolean;       // Активен ли токен
     invalidatedAt?: Date;   // Когда был инвалидирован (если применимо)
 };
-
 export interface Paginator<T>  {
     pagesCount: number;
     page: number;
@@ -144,6 +167,17 @@ export interface Paginator<T>  {
     totalCount: number;
     items: T[];
 }
-
-
+export interface PaginationQuery {
+    pageNumber: number;
+    pageSize: number;
+    sortBy: 'createdAt';
+    sortDirection: 1 | -1;
+}
+export interface BlogsQuery extends PaginationQuery {
+    searchNameTerm: string | null;
+}
+export interface UsersQuery extends PaginationQuery {
+    searchLoginTerm: string | null;
+    searchEmailTerm: string | null;
+}
 

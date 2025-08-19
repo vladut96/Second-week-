@@ -1,94 +1,78 @@
 import { injectable } from 'inversify';
 import { BlogModel } from "../db/models";
-import { BlogInputModel, BlogViewModel } from "../types/types";
-import { Types } from "mongoose";
-
-export function mapToBlogViewModel(blog: any): BlogViewModel {
-    return {
-        id: blog._id.toString(),
-        name: blog.name,
-        description: blog.description,
-        websiteUrl: blog.websiteUrl,
-        createdAt: blog.createdAt,
-        isMembership: blog.isMembership || false
-    };
-}
+import {BlogInputModel, BlogsQuery, BlogViewModel, Paginator} from "../types/types";
+import {FilterQuery, SortOrder, Types} from "mongoose";
+import {BlogsEntity} from "../entities/blogs.entity";
 
 @injectable()
 export class BlogsQueryRepository {
-    async getBlogs({
-                       searchNameTerm,
-                       sortBy,
-                       sortDirection,
-                       skip,
-                       limit
-                   }: {
-        searchNameTerm: string | null;
-        sortBy: string;
-        sortDirection: 1 | -1;
-        skip: number;
-        limit: number;
-    }): Promise<BlogViewModel[]> {
-        const filter = searchNameTerm
-            ? { name: { $regex: searchNameTerm, $options: "i" } }
-            : {};
+    async getBlogs(params: BlogsQuery): Promise<Paginator<BlogViewModel>> {
+        const { searchNameTerm, sortBy, sortDirection, pageNumber, pageSize } = params;
 
-        const blogs = await BlogModel
-            .find(filter)
-            .sort({ [sortBy]: sortDirection })
-            .skip(skip)
-            .limit(limit)
-            .lean();
+        const filter: FilterQuery<any> = {};
+        if (searchNameTerm) {
+            filter.name = { $regex: searchNameTerm, $options: "i" };
+        }
 
-        return blogs.map(mapToBlogViewModel);
+        const sort: Record<string, SortOrder> = {
+            [sortBy]: sortDirection,
+        };
+
+        const skip = (pageNumber - 1) * pageSize;
+
+        const [items, totalCount] = await Promise.all([
+            BlogModel.find(filter).sort(sort).skip(skip).limit(pageSize).lean(),
+            BlogModel.countDocuments(filter),
+        ]);
+
+        return {
+            pagesCount: Math.ceil(totalCount / pageSize),
+            page: pageNumber,
+            pageSize,
+            totalCount,
+            items: items.map((raw) =>
+                BlogsEntity.fromPersistence(raw).toViewModel(),
+            ),
+        };
     }
-
-    async getTotalBlogsCount(searchNameTerm: string | null): Promise<number> {
-        const filter = searchNameTerm
-            ? { name: { $regex: searchNameTerm, $options: "i" } }
-            : {};
-
-        return await BlogModel.countDocuments(filter);
-    }
-
     async getBlogById(id: string): Promise<BlogViewModel | null> {
         if (!Types.ObjectId.isValid(id)) return null;
-
         const blog = await BlogModel.findById(id).lean();
-        return blog ? mapToBlogViewModel(blog) : null;
+        return blog ? BlogsEntity.fromPersistence(blog).toViewModel() : null;
     }
 }
 
 @injectable()
 export class BlogsRepository {
-    async createBlog({ name, description, websiteUrl }: BlogInputModel): Promise<BlogViewModel> {
-        const newBlog = new BlogModel({
-            name,
-            description,
-            websiteUrl,
-            createdAt: new Date().toISOString(),
-            isMembership: false
-        });
-
-        await newBlog.save();
-        return mapToBlogViewModel(newBlog.toObject());
+    async getById(id: string): Promise<BlogsEntity | null> {
+        if (!Types.ObjectId.isValid(id)) return null;
+        const doc = await BlogModel.findById(id).lean().exec();
+        return doc ? BlogsEntity.fromPersistence(doc as any) : null;
     }
 
-    async updateBlog(id: string, updateData: BlogInputModel): Promise<boolean> {
-        if (!Types.ObjectId.isValid(id)) return false;
+    async save(entity: BlogsEntity): Promise<BlogsEntity> {
+        const payload = entity.toPersistence();
 
-        const result = await BlogModel.updateOne(
-            { _id: id },
-            { $set: updateData }
-        ).exec();
+        if (entity.id) {
+            // UPDATE
+            await BlogModel.updateOne(
+                { _id: new Types.ObjectId(entity.id) },
+                { $set: payload }
+            ).exec();
 
-        return result.matchedCount > 0;
+            const updated = await BlogModel.findById(entity.id).lean().exec();
+            if (!updated) throw new Error("Blog not found after update");
+            return BlogsEntity.fromPersistence(updated as any);
+        } else {
+            // CREATE
+            const created = await BlogModel.create(payload);
+            return BlogsEntity.fromPersistence(created.toObject());
+        }
     }
 
     async deleteBlogById(id: string): Promise<boolean> {
         if (!Types.ObjectId.isValid(id)) return false;
-
-        const result = await BlogModel.deleteOne({ _id: id }).exec();
-        return result.deletedCount > 0;
+        const res = await BlogModel.deleteOne({ _id: id }).exec();
+        return res.deletedCount > 0;
     }
 }

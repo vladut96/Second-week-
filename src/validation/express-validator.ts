@@ -1,5 +1,5 @@
 import {NextFunction, Request, Response } from "express";
-import {body, check, ValidationError, validationResult} from "express-validator";
+import {body, check, ValidationError, validationResult,query} from "express-validator";
 
 export const validatePostInput = [
     check('title')
@@ -132,7 +132,6 @@ export const validatePassword = [
         .isLength({ min : 6, max: 20 }).withMessage('Short description must be ≤100 characters')
         .withMessage('Email format is invalid'),
 ];
-
 export const likeStatusValidation = [
     body('likeStatus')
         .trim()
@@ -142,6 +141,33 @@ export const likeStatusValidation = [
         .isIn(['Like', 'Dislike', 'None'])
         .withMessage('Like status must be "Like", "Dislike", or "None"')
 ];
+export const paginationValidationRules = [
+    query('pageNumber')
+        .customSanitizer(v => (v == null || v === '' ? '1' : v))
+        .toInt()
+        .isInt({ min: 1 })
+        .withMessage('pageNumber must be a positive integer'),
+
+    query('pageSize')
+        .customSanitizer(v => (v == null || v === '' ? '10' : v))
+        .toInt()
+        .isInt({ min: 1 })
+        .withMessage('pageSize must be a positive integer'),
+
+    query('sortBy')
+        .customSanitizer(v => (v == null || v === '' ? 'createdAt' : String(v)))
+        .isIn(['createdAt'])
+        .withMessage('sortBy must be "createdAt"'),
+
+    query('sortDirection')
+        .customSanitizer((v) => {
+            const val = (v == null || v === '') ? 'desc' : String(v).toLowerCase();
+            return val === 'asc' ? 1 : -1;
+        })
+        .custom((v) => v === 1 || v === -1)
+        .withMessage('sortDirection must be either asc or desc'),
+];
+
 
 export const handleValidationErrors = (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);

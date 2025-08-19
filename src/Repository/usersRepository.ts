@@ -1,49 +1,32 @@
-import { UserModel } from '../db/models';
-import { Paginator, RegisterUserDB, UserViewModel } from '../types/types';
-import { EmailConfirmation } from "../../service/email-confirmation-code-generator";
+import {UserModel, UserSchemaType} from '../db/models';
+import {RegisterUserDB, UsersQuery, UserViewModel} from '../types/types';
+import { EmailConfirmation } from "../service/email-confirmation-code-generator";
 import {injectable} from "inversify";
+import {FilterQuery, HydratedDocument, SortOrder} from "mongoose";
 
 @injectable()
 export class UsersRepository {
-    async getUsers({ searchLoginTerm, searchEmailTerm, sortBy, sortDirection, pageNumber, pageSize }:
-                   { searchLoginTerm?: string; searchEmailTerm?: string; sortBy: string; sortDirection: 1 | -1; pageNumber: number; pageSize: number; }
-    ): Promise<Paginator<UserViewModel>> {
-        const filter: any = {};
+    async getUsers(params: UsersQuery): Promise<{users: HydratedDocument<UserSchemaType>[]; totalCount: number; }> {
+        const { searchLoginTerm, searchEmailTerm, sortBy, sortDirection, pageNumber, pageSize } = params;
 
+        const filter: FilterQuery<UserSchemaType> = {};
         if (searchLoginTerm || searchEmailTerm) {
             filter.$or = [];
-
-            if (searchLoginTerm) {
-                filter.$or.push({ login: { $regex: searchLoginTerm, $options: 'i' } });
-            }
-            if (searchEmailTerm) {
-                filter.$or.push({ email: { $regex: searchEmailTerm, $options: 'i' } });
-            }
+            if (searchLoginTerm) filter.$or.push({ login: { $regex: searchLoginTerm, $options: 'i' } });
+            if (searchEmailTerm) filter.$or.push({ email: { $regex: searchEmailTerm, $options: 'i' } });
+            if (filter.$or.length === 0) delete filter.$or;
         }
 
         const totalCount = await UserModel.countDocuments(filter);
 
         const users = await UserModel
             .find(filter)
-            .sort({ [sortBy]: sortDirection })
+            .sort({ [sortBy]: sortDirection as SortOrder })
             .skip((pageNumber - 1) * pageSize)
-            .limit(pageSize)
-            .lean();
+            .limit(pageSize);
 
-        return {
-            pagesCount: Math.ceil(totalCount / pageSize),
-            page: pageNumber,
-            pageSize,
-            totalCount,
-            items: users.map((user): UserViewModel => ({
-                id: user._id.toString(),
-                login: user.login,
-                email: user.email,
-                createdAt: user.createdAt|| 'unknown',
-            })),
-        };
+        return { users, totalCount };
     }
-
     async getUserByLoginOrEmail(login: string, email: string): Promise<UserViewModel | null> {
         const user = await UserModel.findOne({ $or: [{ login }, { email }] }).lean();
 
@@ -56,30 +39,9 @@ export class UsersRepository {
             createdAt: user.createdAt || 'unknown'
         };
     }
-
-    async createUser(user: RegisterUserDB<EmailConfirmation>): Promise<UserViewModel> {
-        const newUser = new UserModel({
-            login: user.login,
-            email: user.email,
-            passwordHash: user.passwordHash,
-            createdAt: new Date().toISOString(),
-            emailConfirmation: user.emailConfirmation,
-            passwordRecovery: {
-                recoveryCode: null,
-                expirationDate: null
-            }
-        });
-
-        await newUser.save();
-
-        return {
-            id: newUser._id.toString(),
-            login: newUser.login,
-            email: newUser.email,
-            createdAt: newUser.createdAt || 'unknown',
-        };
+    async save(newUser: UserSchemaType): Promise<HydratedDocument<UserSchemaType>> {
+        return await UserModel.create(newUser);
     }
-
     async deleteUserById(userId: string): Promise<boolean> {
         const result = await UserModel.deleteOne({ _id: userId });
         return result.deletedCount > 0;

@@ -1,8 +1,8 @@
 import { injectable, inject } from 'inversify';
-import {AuthService} from "../src/domain/auth-service";
+import {AuthService} from "../domain/auth-service";
 import {Request, Response} from "express";
 import {UAParser} from "ua-parser-js";
-import {MeViewModel, UserInputModel} from "../src/types/types";
+import {MeViewModel, UserInputModel} from "../types/types";
 
 @injectable()
 export class AuthController {
@@ -31,7 +31,7 @@ export class AuthController {
         }
         res.cookie('refreshToken', authResult.refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: true,
         });
         return res.status(200).json({ accessToken: authResult.accessToken });
     }

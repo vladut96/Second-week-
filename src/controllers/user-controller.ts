@@ -1,43 +1,40 @@
-import {UsersService} from "../src/domain/users-service";
+import {UsersService} from "../domain/users-service";
 import {Request, Response} from "express";
-import {UserInputModel} from "../src/types/types";
-import {inject, injectable} from "inversify";
+import {PaginationQuery, UserInputModel} from "../types/types";
+import { injectable} from "inversify";
+import { matchedData } from 'express-validator';
+
 
 @injectable()
 export class UserController {
 
     constructor( protected usersService: UsersService) {
     }
-
     async getUsers(req: Request, res: Response) {
-        const {searchLoginTerm, searchEmailTerm, sortBy = 'createdAt', sortDirection = 'desc'} = req.query;
-        const pageNumber = parseInt(req.query.pageNumber as string, 10) || 1;
-        const pageSize = parseInt(req.query.pageSize as string, 10) || 10;
+        const { pageNumber, pageSize, sortBy, sortDirection } = matchedData(req, {
+            locations: ['query'],
+            includeOptionals: true }) as PaginationQuery;
+
+        const { searchLoginTerm, searchEmailTerm } = req.query;
 
         const users = await this.usersService.getUsers({
             searchLoginTerm: searchLoginTerm as string,
             searchEmailTerm: searchEmailTerm as string,
-            sortBy: sortBy as string,
-            sortDirection: sortDirection === 'asc' ? 1 : -1,
+            sortBy,
+            sortDirection,
             pageNumber,
             pageSize,
         });
 
         return res.status(200).json(users);
     }
-
     async createUser(req: Request, res: Response) {
-        const userData: UserInputModel = req.body;
+        const userDTO: UserInputModel = req.body;
 
-        const newUser = await this.usersService.createUser(userData);
-
-        if ('errorsMessages' in newUser) {
-            return res.status(400).json(newUser);
-        }
+        const newUser = await this.usersService.createUser(userDTO);
 
         return res.status(201).json(newUser);
     }
-
     async deleteUser(req: Request, res: Response) {
         const userId = req.params.id;
 

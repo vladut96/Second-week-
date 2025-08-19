@@ -39,13 +39,14 @@ export class CommentsService{
         }
         return { success: true };
     }
-    async getCommentsByPostId({ postId, pageNumber, pageSize, sortBy,  sortDirection }: { postId: string; pageNumber: number; pageSize: number; sortBy: string; sortDirection: 1 | -1;}) {
+    async getCommentsByPostId({ postId, pageNumber, pageSize, sortBy,  sortDirection, currentUserId}: { postId: string; pageNumber: number; pageSize: number; sortBy: string; sortDirection: 1 | -1; currentUserId?: string }) {
         return await this.commentsRepository.getCommentsByPostId({
             postId,
             pageNumber,
             pageSize,
             sortBy,
-            sortDirection
+            sortDirection,
+            currentUserId
         });
     }
     async createComment( postId: string, content: string, userId: string, userLogin: string ) {

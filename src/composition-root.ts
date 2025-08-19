@@ -13,11 +13,11 @@ import { BlogService, BlogQueryService } from "./domain/blogs-service";
 import { PostsService, PostsQueryService } from "./domain/posts-service";
 import { CommentsService } from "./domain/comments-service";
 
-import { UserController } from "../controllers/user-controller";
-import { AuthController } from "../controllers/auth-controller";
-import { BlogsController } from "../controllers/blogs-controller";
-import { PostsController } from "../controllers/posts-controller";
-import { CommentsController } from "../controllers/comments-controller";
+import { UserController } from "./controllers/user-controller";
+import { AuthController } from "./controllers/auth-controller";
+import { BlogsController } from "./controllers/blogs-controller";
+import { PostsController } from "./controllers/posts-controller";
+import { CommentsController } from "./controllers/comments-controller";
 
 const container = new Container();
 

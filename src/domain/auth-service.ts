@@ -7,7 +7,9 @@ import { generateTokens } from '../utils/authUtils';
 import {FieldError, RegisterUserDB, UserInputModel} from "../types/types";
 import {randomUUID} from "crypto";
 import jwt, {JwtPayload} from "jsonwebtoken";
-import {EmailConfirmation, EmailConfirmationFactory} from "../../service/email-confirmation-code-generator";
+import {EmailConfirmation, EmailConfirmationFactory} from "../service/email-confirmation-code-generator";
+import {UserEntity} from "../entities/user.entity";
+import {UserModel, UserSchemaType} from "../db/models";
 
 @injectable()
 export class AuthService {
@@ -15,6 +17,33 @@ export class AuthService {
         @inject(AuthRepository) protected authRepository: AuthRepository,
         @inject(UsersRepository) protected usersRepository: UsersRepository
     ) {
+    }
+    async registerUser(userDTO: UserInputModel) {
+        const {login, email, password} = userDTO;
+        const existingUser = await this.usersRepository.getUserByLoginOrEmail(login, email);
+
+        if (existingUser) {
+            const errorsMessages: FieldError[] = [];
+            if (existingUser.login === login) errorsMessages.push({ message: 'User with this login already exists', field: 'login' });
+            if (existingUser.email === email) errorsMessages.push({ message: 'User with this email already exists', field: 'email' });
+            return { errorsMessages };
+        }
+
+        const userEntity = await UserEntity.register(userDTO);
+
+        const newUser = await this.usersRepository.save(userEntity.toPersistence());
+
+        try {
+            await nodemailerService.sendEmail(
+                email,
+                newUser.emailConfirmation.confirmationCode!,
+                nodemailerService.emailTemplates.registrationEmail
+            );
+        } catch (err) {
+            console.error('Send email error', err);
+        }
+
+        return newUser;
     }
     async authenticateUser(loginOrEmail: string, password: string, deviceName: string, ip: string) {
         const user = await this.authRepository.getUserByLoginOrEmail(loginOrEmail);
@@ -34,46 +63,6 @@ export class AuthService {
         });
 
         return { accessToken, refreshToken };
-    }
-    async registerUser(userData: UserInputModel) {
-        const { login, password, email } = userData;
-        const existingUser = await this.usersRepository.getUserByLoginOrEmail(login, email);
-
-        if (existingUser) {
-            const errorsMessages: FieldError[] = [];
-            if (existingUser.login === login) errorsMessages.push({ message: 'User with this login already exists', field: 'login' });
-            if (existingUser.email === email) errorsMessages.push({ message: 'User with this email already exists', field: 'email' });
-            return { errorsMessages };
-        }
-
-        const newUser: RegisterUserDB<EmailConfirmation> = {
-            login,
-            email,
-            passwordHash: await hashPassword(password),
-            emailConfirmation: EmailConfirmationFactory.create(),
-            passwordRecovery: {
-                recoveryCode:  null,
-                expirationDate:  null
-            }
-        };
-
-        await this.usersRepository.createUser(newUser);
-
-        if (!newUser.emailConfirmation.confirmationCode) {
-            throw new Error('Confirmation code is missing.');
-        }
-
-        try {
-            await nodemailerService.sendEmail(
-                email,
-                newUser.emailConfirmation.confirmationCode,
-                nodemailerService.emailTemplates.registrationEmail
-            );
-        } catch (e) {
-            console.error('Send email error', e);
-        }
-
-        return newUser;
     }
     async confirmEmail(code: string) {
         const user = await this.authRepository.findByConfirmationCode(code);
