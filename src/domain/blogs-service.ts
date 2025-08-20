@@ -12,8 +12,8 @@ export class BlogQueryService {
     async getBlogs(query: BlogsQuery): Promise<Paginator<BlogViewModel>> {
         return this.blogQueryRepository.getBlogs(query);
     }
-    async getBlogById(id: string): Promise<BlogViewModel | null> {
-        return await this.blogQueryRepository.getBlogById(id);
+    async getBlogById(blogID :string): Promise<BlogViewModel | null> {
+        return await this.blogQueryRepository.getBlogById(blogID);
     }
 }
 

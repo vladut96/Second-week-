@@ -46,6 +46,7 @@ export class BlogsController {
 return res.status(200).json(foundBlog);
 }
     async getPostsByBlogId(req: Request, res: Response) {
+
         const blogId = req.params.blogId;
 
         const blog = await this.blogsQueryService.getBlogById(blogId);
@@ -56,7 +57,7 @@ return res.status(200).json(foundBlog);
             includeOptionals: true,
         }) as PaginationQuery;
 
-        const currentUserId = req.user?.userId;
+        const currentUserId = req.userId;
 
         const response = await this.postsQueryService.getPostsByBlogId(
             blogId,

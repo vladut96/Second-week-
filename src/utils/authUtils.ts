@@ -17,7 +17,7 @@ export const generateTokens = (user: { _id: any; email: string; login: string },
     const refreshToken = jwt.sign(
         {
             userId: user._id.toString(),
-            deviceId, // Используем переданный deviceId
+            deviceId,
         },
         process.env.JWT_SECRET!,
         { expiresIn: refreshTokenExpiresIn }
