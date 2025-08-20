@@ -7,7 +7,7 @@ import { generateTokens } from '../utils/authUtils';
 import {FieldError, RegisterUserDB, UserInputModel} from "../types/types";
 import {randomUUID} from "crypto";
 import jwt, {JwtPayload} from "jsonwebtoken";
-import {EmailConfirmation, EmailConfirmationFactory} from "../service/email-confirmation-code-generator";
+import {EmailConfirmationFactory} from "../service/email-confirmation-code-generator";
 import {UserEntity} from "../entities/user.entity";
 import {UserModel, UserSchemaType} from "../db/models";
 

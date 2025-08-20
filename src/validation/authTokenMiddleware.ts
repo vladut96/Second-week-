@@ -82,8 +82,7 @@ export const authenticateTokenToGetID = (req: Request, _res: Response, next: Nex
         const decoded = jwt.verify(token, JWT_SECRET);
         if (!isAccessTokenPayload(decoded)) return next();
 
-        const { userId, login, email } = decoded;
-        req.user = { userId, login, email }; // строго соответствует MeViewModel
+        const { userId} = decoded;
         req.userId = userId;
     } catch {
     } finally {

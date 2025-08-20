@@ -28,16 +28,18 @@ export class PostsController {
         return res.sendStatus(204);
     }
     async getPosts (req: Request, res: Response) {
+        const currentUserId = req.userId;
         const { pageNumber, pageSize, sortBy, sortDirection } = matchedData(req, {
             locations: ['query'],
             includeOptionals: true }) as PaginationQuery;
 
-    const posts = await this.postsQueryService.getPosts({ sortBy, sortDirection, pageNumber, pageSize });
+    const posts = await this.postsQueryService.getPosts({ sortBy, sortDirection, pageNumber, pageSize }, currentUserId);
     res.status(200).json(posts);
 }
     async getPostsById (req: Request , res: Response) {
+    const currentUserId = req.userId;
     const postId = req.params.id;
-    const foundPost = await this.postsQueryService.getPostById(postId);
+    const foundPost = await this.postsQueryService.getPostById(postId, currentUserId);
 
     if (!foundPost) {
     return res.sendStatus(404);
@@ -80,7 +82,7 @@ return res.sendStatus(204);
 return res.sendStatus(204);
 }
     async getPostsComments (req: Request, res: Response) {
-        const currentUserId = req.user?.userId;
+        const currentUserId = req.userId;
         const { postId } = req.params;
         const { pageNumber, pageSize, sortBy, sortDirection } = matchedData(req, {
             locations: ['query'],

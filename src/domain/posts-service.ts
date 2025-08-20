@@ -13,7 +13,6 @@ export class PostsService {
         @inject(PostsRepository) protected postsRepository: PostsRepository,
         @inject(BlogsQueryRepository) protected blogsQueryRepository: BlogsQueryRepository
     ) {}
-
     async createPost(postPayload: PostInputModel): Promise<PostViewModel> {
         const { title, shortDescription, content, blogId } = postPayload;
 
@@ -27,7 +26,6 @@ export class PostsService {
 
         return saved.toViewModel('None', []);
     }
-
     async updatePost(id: string, updateData: PostInputModel): Promise<boolean> {
         const entity = await this.postsRepository.getById(id);
         if (!entity) return false;
@@ -39,16 +37,10 @@ export class PostsService {
         await this.postsRepository.save(entity);
         return true;
     }
-
     async deletePostById(postId: string): Promise<boolean> {
         return this.postsRepository.deletePostById(postId);
     }
-    async setLikeStatus(
-        postId: string,
-        userId: string,
-        userLogin: string,
-        likeStatus: LikeStatus
-    ): Promise<'OK' | 'NOT_FOUND'> {
+    async setLikeStatus( postId: string, userId: string, userLogin: string, likeStatus: LikeStatus): Promise<'OK' | 'NOT_FOUND'> {
         const session = await mongoose.startSession();
         try {
             let outcome: 'OK' | 'NOT_FOUND' = 'OK';
